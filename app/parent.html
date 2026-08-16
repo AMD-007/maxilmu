@@ -129,21 +129,21 @@
     const bodyRows = activeSubjects.map((subj) => {
       const cells = EXAM_PERIODS.map((exam) => {
         const val = student.exams[exam.key][subj];
-        return `<td>${typeof val === "number" ? val + "%" : '<span class="cell-muted">—</span>'}</td>`;
+        return `<td data-label="${exam.label}">${typeof val === "number" ? val + "%" : '<span class="cell-muted">—</span>'}</td>`;
       }).join("");
-      return `<tr><td>${escapeHtml(subj)}</td>${cells}</tr>`;
+      return `<tr><td data-label="Subjek">${escapeHtml(subj)}</td>${cells}</tr>`;
     }).join("");
     const avgCells = EXAM_PERIODS.map((exam) => {
       const avg = examAverage(state, student, exam.key);
-      return `<td class="col-num">${avg === null ? "—" : avg + "%"}</td>`;
+      return `<td class="col-num" data-label="${exam.label}">${avg === null ? "—" : avg + "%"}</td>`;
     }).join("");
     resultsWrap.innerHTML = `
-      <table class="data-table">
+      <table class="data-table stack-table">
         <thead>
           <tr><th>Subjek</th>${EXAM_PERIODS.map((exam) => `<th>${exam.label}</th>`).join("")}</tr>
         </thead>
         <tbody>${bodyRows}</tbody>
-        <tfoot><tr><td>Purata</td>${avgCells}</tr></tfoot>
+        <tfoot><tr><td data-label="Subjek">Purata</td>${avgCells}</tr></tfoot>
       </table>
     `;
   }
@@ -165,13 +165,13 @@
   } else {
     const attendanceRowsDesc = attendancePoints.slice().reverse();
     attendanceTableWrap.innerHTML = `
-      <table class="data-table">
+      <table class="data-table stack-table">
         <thead><tr><th>Bulan</th><th>Kehadiran</th></tr></thead>
         <tbody>
           ${attendanceRowsDesc.map((p) => `
             <tr>
-              <td>${formatMonth(p.entry.month)}</td>
-              <td>${p.entry.rate}%</td>
+              <td data-label="Bulan">${formatMonth(p.entry.month)}</td>
+              <td data-label="Kehadiran">${p.entry.rate}%</td>
             </tr>
           `).join("")}
         </tbody>
@@ -194,15 +194,15 @@
   } else {
     const rowsDesc = points.slice().reverse();
     hafazanTableWrap.innerHTML = `
-      <table class="data-table">
+      <table class="data-table stack-table">
         <thead><tr><th>Minggu (Tarikh)</th><th>Tambahan</th><th>Catatan</th><th>Terkumpul</th></tr></thead>
         <tbody>
           ${rowsDesc.map((p) => `
             <tr>
-              <td>${formatDate(p.entry.date)}</td>
-              <td>+${p.entry.amount} ${hafazanUnitLabel(hafazan.unit, p.entry.amount)}</td>
-              <td>${p.entry.note ? escapeHtml(p.entry.note) : '<span class="cell-muted">—</span>'}</td>
-              <td>${p.cumulative}</td>
+              <td data-label="Minggu (Tarikh)">${formatDate(p.entry.date)}</td>
+              <td data-label="Tambahan">+${p.entry.amount} ${hafazanUnitLabel(hafazan.unit, p.entry.amount)}</td>
+              <td data-label="Catatan">${p.entry.note ? escapeHtml(p.entry.note) : '<span class="cell-muted">—</span>'}</td>
+              <td data-label="Terkumpul">${p.cumulative}</td>
             </tr>
           `).join("")}
         </tbody>

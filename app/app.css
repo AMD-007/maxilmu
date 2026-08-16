@@ -191,6 +191,75 @@
 }
 .data-table .col-num { text-align: right; }
 
+/* Any dense browse-style table (student roster, hafazan/attendance
+   logs, exam results) forces a choice on narrow screens between
+   seeing a row's label and reaching its value or actions — a strip
+   that scrolls sideways always hides one or the other. Below this
+   width, .stack-table rows become self-contained cards instead:
+   first cell as the card title, every other cell as a label:value
+   line via its data-label. Editable grids (the marks-entry table)
+   deliberately don't use this — comparing three exam columns side
+   by side needs a real grid, so those keep native horizontal scroll. */
+@media (max-width: 760px) {
+  .table-wrap:has(.stack-table) { border: 0; overflow: visible; }
+  .stack-table, .stack-table tbody, .stack-table tfoot, .stack-table tr, .stack-table td { display: block; width: 100%; }
+  .stack-table thead { display: none; }
+  .stack-table tr {
+    background: var(--parchment);
+    border: 1px solid rgba(43, 35, 24, 0.12);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 1px 2px rgba(43, 35, 24, 0.05);
+  }
+  .stack-table tbody tr:last-child { margin-bottom: 0; }
+  .stack-table tfoot tr { border-color: var(--gold); margin-top: -0.4rem; }
+  .stack-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.4rem 0;
+    border: 0;
+    white-space: normal;
+  }
+  .stack-table td::before {
+    content: attr(data-label);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+  }
+  .stack-table td:first-child {
+    font-family: var(--font-display);
+    font-size: 1.08rem;
+    font-weight: 600;
+    justify-content: flex-start;
+    padding-bottom: 0.6rem;
+    margin-bottom: 0.3rem;
+    border-bottom: 1px solid rgba(43, 35, 24, 0.1);
+  }
+  .stack-table td:first-child::before { content: none; }
+  /* Multi-button action cells (roster) — full-width, wrapping */
+  .stack-table td.cell-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    padding-top: 0.6rem;
+    margin-top: 0.3rem;
+    border-top: 1px solid rgba(43, 35, 24, 0.1);
+  }
+  /* Single icon-button cells (row delete) — no label, right-aligned */
+  .stack-table td[data-label=""] {
+    justify-content: flex-end;
+    padding-top: 0.3rem;
+    margin-top: -0.1rem;
+    border-top: 1px dashed rgba(43, 35, 24, 0.12);
+  }
+  .stack-table .progress-bar { max-width: 100px; }
+}
+
 /* Marks-entry grid: subject rows x exam-period columns, editable
    inline inside the table itself rather than one field per row. */
 .data-table input.mark-cell-input {

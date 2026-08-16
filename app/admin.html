@@ -46,7 +46,7 @@
     <div class="stat-grid" id="dashboard-stats"></div>
 
     <div class="table-wrap">
-      <table class="data-table">
+      <table class="data-table stack-table">
         <thead>
           <tr>
             <th>Nama</th>
@@ -271,7 +271,7 @@
       .forEach((student) => {
         const examCells = EXAM_PERIODS.map((exam) => {
           const avg = examAverage(state, student, exam.key);
-          return `<td>${avg === null ? '<span class="cell-muted">—</span>' : avg + "%"}</td>`;
+          return `<td data-label="${exam.label}">${avg === null ? '<span class="cell-muted">—</span>' : avg + "%"}</td>`;
         }).join("");
         const hafazanTotal = getHafazanTotal(student);
         const hafazanPct = Math.min(100, Math.round((hafazanTotal / hafazanTarget) * 100));
@@ -280,18 +280,18 @@
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${escapeHtml(student.name)}</td>
-          <td>${escapeHtml(student.className)}</td>
+          <td data-label="Nama">${escapeHtml(student.name)}</td>
+          <td data-label="Kelas">${escapeHtml(student.className)}</td>
           ${examCells}
-          <td>
+          <td data-label="Kehadiran">
             ${latestAttendance ? latestAttendance.rate + "%" : '<span class="cell-muted">—</span>'}
             <div class="progress-bar"><div class="progress-bar__fill" style="width:${attendancePct}%"></div></div>
           </td>
-          <td>
+          <td data-label="${hafazanUnitLabel(unit, 2)}">
             ${hafazanTotal} / ${hafazanTarget}
             <div class="progress-bar"><div class="progress-bar__fill" style="width:${hafazanPct}%"></div></div>
           </td>
-          <td>
+          <td class="cell-actions" data-label="">
             <button class="btn btn--secondary btn--small" data-edit-results="${student.id}" type="button">Keputusan</button>
             <button class="btn btn--secondary btn--small" data-edit-attendance="${student.id}" type="button">Kehadiran</button>
             <button class="btn btn--secondary btn--small" data-edit-hafazan="${student.id}" type="button">Hafazan</button>
@@ -418,16 +418,16 @@
         <div class="chart-card" id="hafazan-chart-mount"></div>
         <div class="table-wrap" style="margin-bottom:1rem;">
           ${rowsDesc.length ? `
-            <table class="data-table">
+            <table class="data-table stack-table">
               <thead><tr><th>Minggu (Tarikh)</th><th>Tambahan</th><th>Catatan</th><th>Terkumpul</th><th></th></tr></thead>
               <tbody>
                 ${rowsDesc.map((p) => `
                   <tr>
-                    <td>${formatDate(p.entry.date)}</td>
-                    <td>+${p.entry.amount} ${hafazanUnitLabel(hafazan.unit, p.entry.amount)}</td>
-                    <td>${p.entry.note ? escapeHtml(p.entry.note) : '<span class="cell-muted">—</span>'}</td>
-                    <td>${p.cumulative}</td>
-                    <td><button class="row-delete-btn" type="button" data-delete-entry="${p.entry.id}" aria-label="Padam rekod">&times;</button></td>
+                    <td data-label="Minggu (Tarikh)">${formatDate(p.entry.date)}</td>
+                    <td data-label="Tambahan">+${p.entry.amount} ${hafazanUnitLabel(hafazan.unit, p.entry.amount)}</td>
+                    <td data-label="Catatan">${p.entry.note ? escapeHtml(p.entry.note) : '<span class="cell-muted">—</span>'}</td>
+                    <td data-label="Terkumpul">${p.cumulative}</td>
+                    <td data-label=""><button class="row-delete-btn" type="button" data-delete-entry="${p.entry.id}" aria-label="Padam rekod">&times;</button></td>
                   </tr>
                 `).join("")}
               </tbody>
@@ -528,14 +528,14 @@
         <div class="chart-card" id="attendance-chart-mount"></div>
         <div class="table-wrap" style="margin-bottom:1rem;">
           ${rowsDesc.length ? `
-            <table class="data-table">
+            <table class="data-table stack-table">
               <thead><tr><th>Bulan</th><th>Kehadiran</th><th></th></tr></thead>
               <tbody>
                 ${rowsDesc.map((p) => `
                   <tr>
-                    <td>${formatMonth(p.entry.month)}</td>
-                    <td>${p.entry.rate}%</td>
-                    <td><button class="row-delete-btn" type="button" data-delete-entry="${p.entry.id}" aria-label="Padam rekod">&times;</button></td>
+                    <td data-label="Bulan">${formatMonth(p.entry.month)}</td>
+                    <td data-label="Kehadiran">${p.entry.rate}%</td>
+                    <td data-label=""><button class="row-delete-btn" type="button" data-delete-entry="${p.entry.id}" aria-label="Padam rekod">&times;</button></td>
                   </tr>
                 `).join("")}
               </tbody>
