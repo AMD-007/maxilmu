@@ -34,20 +34,26 @@
 <main class="portal-main container">
 
   <!-- ============================================================
-       PELAJAR — student roster + marks/hafazan/attendance entry
+       PELAJAR — dashboard snapshot + roster (3 exam periods,
+       attendance, hafazan) + entry modals
        ============================================================ -->
   <section class="portal-panel is-active" data-panel="pelajar" id="panel-pelajar">
     <div class="panel-head">
       <h1>Pelajar</h1>
       <span class="panel-head__meta" id="student-count-meta"></span>
     </div>
+
+    <div class="stat-grid" id="dashboard-stats"></div>
+
     <div class="table-wrap">
       <table class="data-table">
         <thead>
           <tr>
             <th>Nama</th>
             <th>Kelas</th>
-            <th>Markah Purata</th>
+            <th>Awal Tahun</th>
+            <th>Pertengahan Tahun</th>
+            <th>Akhir Tahun</th>
             <th>Kehadiran</th>
             <th id="hafazan-col-head">Hafazan</th>
             <th></th>
@@ -66,12 +72,12 @@
   <!-- ============================================================
        TETAPAN — subjects, hafazan config, contact number, reset
        ============================================================ -->
-  <section class="portal-panel" data-panel="tetapan" id="panel-tetapan">
+  <section class="portal-panel" data-panel="tetapan" id="panel-tetapan" hidden>
     <div class="panel-head"><h1>Tetapan</h1></div>
     <div class="settings-grid">
       <div class="card" id="settings-subjects-card">
         <h2>Senarai Subjek</h2>
-        <p class="card__hint">Subjek yang tersedia semasa memasukkan markah pelajar. Setiap madrasah boleh berbeza.</p>
+        <p class="card__hint">Subjek yang tersedia semasa memasukkan keputusan peperiksaan pelajar. Setiap madrasah boleh berbeza.</p>
         <div class="chip-list" id="subject-chip-list"></div>
         <div class="inline-form">
           <div class="field">
@@ -84,7 +90,7 @@
 
       <div class="card" id="settings-hafazan-card">
         <h2>Tetapan Hafazan</h2>
-        <p class="card__hint">Unit dan sasaran hafazan yang digunakan di panel ini dan paparan ibu bapa.</p>
+        <p class="card__hint">Unit dan sasaran hafazan keseluruhan yang digunakan di panel ini dan paparan ibu bapa. Kemajuan sebenar setiap pelajar dikira daripada jumlah rekod mingguan yang dimasukkan.</p>
         <div class="inline-form">
           <div class="field">
             <label for="hafazan-unit-select">Unit</label>
@@ -102,13 +108,25 @@
         </div>
       </div>
 
+      <div class="card" id="settings-attendance-card">
+        <h2>Tetapan Kehadiran</h2>
+        <p class="card__hint">Sasaran kehadiran bulanan yang digunakan di panel ini dan paparan ibu bapa sebagai garis rujukan pada graf.</p>
+        <div class="inline-form">
+          <div class="field">
+            <label for="attendance-target-input">Sasaran (%)</label>
+            <input type="number" id="attendance-target-input" min="1" max="100" step="1">
+          </div>
+          <button class="btn btn--secondary btn--small" id="btn-save-attendance" type="button">Simpan</button>
+        </div>
+      </div>
+
       <!-- Admin WhatsApp contact card is inserted by JS only when
            FEATURES.finance is true — it configures a number that's
            only ever used by the Yuran contact link. See renderSettings(). -->
 
       <div class="card danger-zone">
         <h2>Zon Bahaya</h2>
-        <p class="card__hint">Set semula semua data demo (pelajar, markah, yuran, tetapan) kepada data contoh asal. Ini akan log keluar semua sesi.</p>
+        <p class="card__hint">Set semula semua data demo (pelajar, keputusan, kehadiran, hafazan, yuran, tetapan) kepada data contoh asal. Ini akan log keluar semua sesi.</p>
         <button class="btn btn--danger btn--small" id="btn-reset-demo" type="button">Reset Data Demo</button>
       </div>
     </div>
@@ -122,6 +140,7 @@
 <div class="toast" id="toast" hidden></div>
 
 <script src="data.js"></script>
+<script src="charts.js"></script>
 <script>
 (function () {
   // ── Session guard — this page is admin-only ──────────────────
@@ -157,6 +176,18 @@
 
   function persist() { saveState(state); }
 
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function todayIso() {
+    // Static "today" for this demo build rather than a live clock —
+    // keeps seed data and freshly-added records in the same
+    // timeframe. Swap for `new Date().toISOString().slice(0,10)` if
+    // this ever needs to track the real clock.
+    return "2026-08-01";
+  }
+
   // ── Logout ──────────────────────────────────────────────────
   document.getElementById("btn-logout").addEventListener("click", () => {
     clearSession();
@@ -165,7 +196,7 @@
 
   // ── Reset demo data ─────────────────────────────────────────
   document.getElementById("btn-reset-demo").addEventListener("click", () => {
-    const ok = confirm("Ini akan memadam semua data demo (pelajar, markah, yuran, tetapan) dan set semula kepada data contoh asal, serta log keluar sesi ini. Teruskan?");
+    const ok = confirm("Ini akan memadam semua data demo (pelajar, keputusan, kehadiran, hafazan, yuran, tetapan) dan set semula kepada data contoh asal, serta log keluar sesi ini. Teruskan?");
     if (!ok) return;
     resetDemoData();
     window.location.href = "login.html";
@@ -185,19 +216,50 @@
   });
 
   // ================================================================
-  // PELAJAR — roster table + marks/hafazan/attendance entry modal
+  // PELAJAR — dashboard stats + roster table
   // ================================================================
-  function activeAverage(student) {
-    const subjects = state.settings.subjects;
-    const values = subjects
-      .filter((subj) => Object.prototype.hasOwnProperty.call(student.marks, subj))
-      .map((subj) => student.marks[subj]);
-    if (!values.length) return null;
-    return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+  function renderDashboardStats() {
+    const mount = document.getElementById("dashboard-stats");
+    const students = state.students;
+    const total = students.length;
+    const attendanceTarget = state.settings.attendance.target;
+    const latestAttendances = students.map((s) => getLatestAttendanceEntry(s)).filter(Boolean);
+    const avgAttendance = latestAttendances.length
+      ? Math.round(latestAttendances.reduce((sum, e) => sum + e.rate, 0) / latestAttendances.length)
+      : null;
+    const hafazanTarget = state.settings.hafazan.total;
+    const avgHafazanPct = total
+      ? Math.round((students.reduce((sum, s) => sum + getHafazanTotal(s) / hafazanTarget, 0) / total) * 100)
+      : 0;
+    const akhirRecorded = students.filter((s) => examAverage(state, s, "akhir") !== null).length;
+
+    mount.innerHTML = `
+      <div class="stat-tile">
+        <span class="stat-tile__label">Jumlah Pelajar</span>
+        <div class="stat-tile__value">${total}</div>
+        <p class="stat-tile__sub">${getClassList(state).length} kelas aktif</p>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile__label">Purata Kehadiran</span>
+        <div class="stat-tile__value">${avgAttendance === null ? "—" : avgAttendance + "%"}</div>
+        <p class="stat-tile__sub">Bulan terkini · sasaran ${attendanceTarget}%</p>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile__label">Purata Kemajuan Hafazan</span>
+        <div class="stat-tile__value">${avgHafazanPct}%</div>
+        <p class="stat-tile__sub">Daripada sasaran ${hafazanTarget} ${hafazanUnitLabel(state.settings.hafazan.unit, hafazanTarget)}</p>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile__label">Akhir Tahun Direkod</span>
+        <div class="stat-tile__value">${akhirRecorded} / ${total}</div>
+        <p class="stat-tile__sub">Pelajar dengan keputusan akhir tahun</p>
+      </div>
+    `;
   }
 
   function renderStudentTable() {
     const unit = state.settings.hafazan.unit;
+    const hafazanTarget = state.settings.hafazan.total;
     document.getElementById("hafazan-col-head").textContent = `Hafazan (${hafazanUnitLabel(unit, 2)})`;
     document.getElementById("student-count-meta").textContent = `${state.students.length} pelajar`;
 
@@ -207,37 +269,71 @@
       .slice()
       .sort((a, b) => a.name.localeCompare(b.name))
       .forEach((student) => {
-        const avg = activeAverage(student);
+        const examCells = EXAM_PERIODS.map((exam) => {
+          const avg = examAverage(state, student, exam.key);
+          return `<td>${avg === null ? '<span class="cell-muted">—</span>' : avg + "%"}</td>`;
+        }).join("");
+        const hafazanTotal = getHafazanTotal(student);
+        const hafazanPct = Math.min(100, Math.round((hafazanTotal / hafazanTarget) * 100));
+        const latestAttendance = getLatestAttendanceEntry(student);
+        const attendancePct = latestAttendance ? Math.min(100, latestAttendance.rate) : 0;
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${escapeHtml(student.name)}</td>
           <td>${escapeHtml(student.className)}</td>
-          <td>${avg === null ? "—" : avg + "%"}</td>
-          <td>${student.attendance}%</td>
-          <td>${student.hafazan} / ${state.settings.hafazan.total}</td>
-          <td><button class="btn btn--secondary btn--small" data-edit-student="${student.id}" type="button">Kemaskini</button></td>
+          ${examCells}
+          <td>
+            ${latestAttendance ? latestAttendance.rate + "%" : '<span class="cell-muted">—</span>'}
+            <div class="progress-bar"><div class="progress-bar__fill" style="width:${attendancePct}%"></div></div>
+          </td>
+          <td>
+            ${hafazanTotal} / ${hafazanTarget}
+            <div class="progress-bar"><div class="progress-bar__fill" style="width:${hafazanPct}%"></div></div>
+          </td>
+          <td>
+            <button class="btn btn--secondary btn--small" data-edit-results="${student.id}" type="button">Keputusan</button>
+            <button class="btn btn--secondary btn--small" data-edit-attendance="${student.id}" type="button">Kehadiran</button>
+            <button class="btn btn--secondary btn--small" data-edit-hafazan="${student.id}" type="button">Hafazan</button>
+          </td>
         `;
         body.appendChild(tr);
       });
 
-    body.querySelectorAll("[data-edit-student]").forEach((btn) => {
-      btn.addEventListener("click", () => openStudentModal(btn.dataset.editStudent));
+    body.querySelectorAll("[data-edit-results]").forEach((btn) => {
+      btn.addEventListener("click", () => openResultsModal(btn.dataset.editResults));
+    });
+    body.querySelectorAll("[data-edit-attendance]").forEach((btn) => {
+      btn.addEventListener("click", () => openAttendanceModal(btn.dataset.editAttendance));
+    });
+    body.querySelectorAll("[data-edit-hafazan]").forEach((btn) => {
+      btn.addEventListener("click", () => openHafazanModal(btn.dataset.editHafazan));
     });
   }
 
-  function openStudentModal(studentId) {
+  // ================================================================
+  // KEPUTUSAN PEPERIKSAAN — one grid: subjects x 3 fixed exam
+  // sittings, plus attendance. All three exams are entered/edited
+  // together so the admin (and later the parent) always sees the
+  // whole-year picture in a single table, never one sitting at a time.
+  // ================================================================
+  function openResultsModal(studentId) {
     const student = getStudent(state, studentId);
     if (!student) return;
-    const hafazan = state.settings.hafazan;
 
-    const marksFields = state.settings.subjects.map((subj) => {
-      const val = Object.prototype.hasOwnProperty.call(student.marks, subj) ? student.marks[subj] : "";
-      const safeId = "mark_" + subj.replace(/[^a-z0-9]/gi, "_");
+    const subjects = state.settings.subjects;
+    const rows = subjects.map((subj) => {
+      const safeId = subj.replace(/[^a-z0-9]/gi, "_");
+      const cells = EXAM_PERIODS.map((exam) => {
+        const val = Object.prototype.hasOwnProperty.call(student.exams[exam.key], subj) ? student.exams[exam.key][subj] : "";
+        return `<td><input type="number" min="0" max="100" class="mark-cell-input" id="mark_${exam.key}_${safeId}" data-exam="${exam.key}" data-subject="${escapeHtml(subj)}" value="${val}"></td>`;
+      }).join("");
       return `
-        <div class="field">
-          <label for="${safeId}">${escapeHtml(subj)}</label>
-          <input type="number" min="0" max="100" id="${safeId}" data-subject="${escapeHtml(subj)}" value="${val}">
-        </div>`;
+        <tr>
+          <td>${escapeHtml(subj)}</td>
+          ${cells}
+          <td class="avg-cell" id="avg_${safeId}">—</td>
+        </tr>`;
     }).join("");
 
     openModal(`
@@ -246,43 +342,275 @@
         <button class="modal__close" type="button" data-close>&times;</button>
       </div>
       <p class="card__hint">${escapeHtml(student.className)} · Ibu bapa: ${escapeHtml(student.parentName)}</p>
-      <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Markah</h3>
-      ${marksFields || '<p class="empty-note">Tiada subjek dalam Tetapan lagi.</p>'}
-      <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Kehadiran &amp; Hafazan</h3>
-      <div class="field">
-        <label for="attendance-input">Kehadiran (%)</label>
-        <input type="number" min="0" max="100" id="attendance-input" value="${student.attendance}">
-      </div>
-      <div class="field">
-        <label for="hafazan-input">Hafazan (${hafazanUnitLabel(hafazan.unit, 2)}, daripada ${hafazan.total})</label>
-        <input type="number" min="0" max="${hafazan.total}" id="hafazan-input" value="${student.hafazan}">
-      </div>
+      <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Keputusan Peperiksaan</h3>
+      ${subjects.length ? `
+        <div class="table-wrap" style="margin-bottom:1rem;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Subjek</th>
+                ${EXAM_PERIODS.map((exam) => `<th>${exam.label}</th>`).join("")}
+                <th>Purata</th>
+              </tr>
+            </thead>
+            <tbody id="results-grid-body">${rows}</tbody>
+          </table>
+        </div>
+      ` : '<p class="empty-note">Tiada subjek dalam Tetapan lagi.</p>'}
       <div class="modal__actions">
         <button class="btn btn--ghost btn--small" type="button" data-close style="color:var(--ink); border-color: rgba(43,35,24,0.2);">Batal</button>
         <button class="btn btn--small" type="button" id="btn-save-student">Simpan</button>
       </div>
     `);
 
+    function recomputeRowAverage(subj) {
+      const safeId = subj.replace(/[^a-z0-9]/gi, "_");
+      const values = EXAM_PERIODS
+        .map((exam) => modalRoot.querySelector(`#mark_${exam.key}_${safeId}`).value)
+        .filter((v) => v !== "")
+        .map(Number);
+      const cell = document.getElementById(`avg_${safeId}`);
+      cell.textContent = values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) + "%" : "—";
+    }
+    modalRoot.querySelectorAll("input[data-subject]").forEach((input) => {
+      recomputeRowAverage(input.dataset.subject);
+      input.addEventListener("input", () => recomputeRowAverage(input.dataset.subject));
+    });
+
     modalRoot.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeModal));
     document.getElementById("btn-save-student").addEventListener("click", () => {
       modalRoot.querySelectorAll("input[data-subject]").forEach((input) => {
+        const examKey = input.dataset.exam;
         const subj = input.dataset.subject;
-        if (input.value === "") { delete student.marks[subj]; return; }
-        student.marks[subj] = Math.max(0, Math.min(100, Number(input.value)));
+        if (input.value === "") { delete student.exams[examKey][subj]; return; }
+        student.exams[examKey][subj] = Math.max(0, Math.min(100, Number(input.value)));
       });
-      const attendanceVal = Number(document.getElementById("attendance-input").value);
-      student.attendance = Math.max(0, Math.min(100, isNaN(attendanceVal) ? student.attendance : attendanceVal));
-      const hafazanVal = Number(document.getElementById("hafazan-input").value);
-      student.hafazan = Math.max(0, Math.min(hafazan.total, isNaN(hafazanVal) ? student.hafazan : hafazanVal));
       persist();
       renderStudentTable();
+      renderDashboardStats();
       closeModal();
-      showToast("Rekod pelajar dikemaskini.");
+      showToast("Keputusan peperiksaan dikemaskini.");
     });
   }
 
-  function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  // ================================================================
+  // HAFAZAN — weekly log: add/remove dated entries, running total
+  // shown as both a table and a cumulative-progress chart. This is
+  // the single source of truth for a student's hafazan progress —
+  // there is no separate flat "hafazan count" field to keep in sync.
+  // ================================================================
+  function openHafazanModal(studentId) {
+    const student = getStudent(state, studentId);
+    if (!student) return;
+    const hafazan = state.settings.hafazan;
+
+    function bodyHtml() {
+      const total = getHafazanTotal(student);
+      const pct = Math.min(100, Math.round((total / hafazan.total) * 100));
+      const points = hafazanCumulativePoints(student);
+      const rowsDesc = points.slice().reverse();
+
+      return `
+        <div class="card__head">
+          <span class="stat-pill">${total} <small>/ ${hafazan.total} ${hafazanUnitLabel(hafazan.unit, hafazan.total)}</small></span>
+          <span class="panel-head__meta">${pct}% daripada sasaran</span>
+        </div>
+        <div class="chart-card" id="hafazan-chart-mount"></div>
+        <div class="table-wrap" style="margin-bottom:1rem;">
+          ${rowsDesc.length ? `
+            <table class="data-table">
+              <thead><tr><th>Minggu (Tarikh)</th><th>Tambahan</th><th>Catatan</th><th>Terkumpul</th><th></th></tr></thead>
+              <tbody>
+                ${rowsDesc.map((p) => `
+                  <tr>
+                    <td>${formatDate(p.entry.date)}</td>
+                    <td>+${p.entry.amount} ${hafazanUnitLabel(hafazan.unit, p.entry.amount)}</td>
+                    <td>${p.entry.note ? escapeHtml(p.entry.note) : '<span class="cell-muted">—</span>'}</td>
+                    <td>${p.cumulative}</td>
+                    <td><button class="row-delete-btn" type="button" data-delete-entry="${p.entry.id}" aria-label="Padam rekod">&times;</button></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          ` : '<p class="empty-note">Belum ada rekod hafazan mingguan.</p>'}
+        </div>
+        <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Tambah Rekod Minggu Ini</h3>
+        <div class="inline-form">
+          <div class="field">
+            <label for="hafazan-entry-date">Tarikh</label>
+            <input type="date" id="hafazan-entry-date" value="${todayIso()}">
+          </div>
+          <div class="field">
+            <label for="hafazan-entry-amount">Tambahan (${hafazanUnitLabel(hafazan.unit, 2)})</label>
+            <input type="number" id="hafazan-entry-amount" min="0" step="0.25" value="0.5">
+          </div>
+          <div class="field" style="flex: 2 1 220px;">
+            <label for="hafazan-entry-note">Catatan (pilihan)</label>
+            <input type="text" id="hafazan-entry-note" placeholder="Cth: Juz 6, m/s 1-10">
+          </div>
+          <button class="btn btn--secondary btn--small" id="btn-add-hafazan-entry" type="button">Tambah</button>
+        </div>
+      `;
+    }
+
+    function renderModalBody() {
+      modalRoot.querySelector("#hafazan-modal-body").innerHTML = bodyHtml();
+      const chartMount = document.getElementById("hafazan-chart-mount");
+      renderHafazanChart(chartMount, hafazanCumulativePoints(student), hafazan.total, hafazanUnitLabel(hafazan.unit, hafazan.total));
+
+      modalRoot.querySelectorAll("[data-delete-entry]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const ok = confirm("Padam rekod hafazan ini?");
+          if (!ok) return;
+          student.hafazanLog = student.hafazanLog.filter((e) => e.id !== btn.dataset.deleteEntry);
+          persist();
+          renderModalBody();
+          renderStudentTable();
+          renderDashboardStats();
+          showToast("Rekod hafazan dipadam.");
+        });
+      });
+
+      document.getElementById("btn-add-hafazan-entry").addEventListener("click", () => {
+        const date = document.getElementById("hafazan-entry-date").value;
+        const amount = Number(document.getElementById("hafazan-entry-amount").value);
+        const note = document.getElementById("hafazan-entry-note").value.trim();
+        if (!date || !amount || amount <= 0) {
+          alert("Sila isi tarikh dan jumlah tambahan yang sah.");
+          return;
+        }
+        student.hafazanLog.push({ id: uid("h"), date, amount, note });
+        persist();
+        renderModalBody();
+        renderStudentTable();
+        renderDashboardStats();
+        showToast("Rekod hafazan mingguan ditambah.");
+      });
+    }
+
+    openModal(`
+      <div class="modal__head">
+        <h2>Hafazan — ${escapeHtml(student.name)}</h2>
+        <button class="modal__close" type="button" data-close>&times;</button>
+      </div>
+      <p class="card__hint">${escapeHtml(student.className)}</p>
+      <div id="hafazan-modal-body"></div>
+      <div class="modal__actions">
+        <button class="btn btn--small" type="button" data-close>Selesai</button>
+      </div>
+    `);
+    modalRoot.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeModal));
+    renderModalBody();
+  }
+
+  // ================================================================
+  // KEHADIRAN — one rate per calendar month: add/remove monthly
+  // entries, shown as both a table and a trend chart against the
+  // madrasah-wide target. Same source-of-truth pattern as hafazan —
+  // there is no separate flat "attendance" field to keep in sync.
+  // ================================================================
+  function openAttendanceModal(studentId) {
+    const student = getStudent(state, studentId);
+    if (!student) return;
+    const attendance = state.settings.attendance;
+
+    function bodyHtml() {
+      const latest = getLatestAttendanceEntry(student);
+      const average = getAttendanceAverage(student);
+      const points = attendanceRatePoints(student);
+      const rowsDesc = points.slice().reverse();
+
+      return `
+        <div class="card__head">
+          <span class="stat-pill">${latest ? latest.rate + "%" : "—"} <small>bulan terkini</small></span>
+          <span class="panel-head__meta">${average === null ? "—" : "Purata " + average + "%"} · Sasaran ${attendance.target}%</span>
+        </div>
+        <div class="chart-card" id="attendance-chart-mount"></div>
+        <div class="table-wrap" style="margin-bottom:1rem;">
+          ${rowsDesc.length ? `
+            <table class="data-table">
+              <thead><tr><th>Bulan</th><th>Kehadiran</th><th></th></tr></thead>
+              <tbody>
+                ${rowsDesc.map((p) => `
+                  <tr>
+                    <td>${formatMonth(p.entry.month)}</td>
+                    <td>${p.entry.rate}%</td>
+                    <td><button class="row-delete-btn" type="button" data-delete-entry="${p.entry.id}" aria-label="Padam rekod">&times;</button></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          ` : '<p class="empty-note">Belum ada rekod kehadiran bulanan.</p>'}
+        </div>
+        <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Tambah Rekod Bulan Ini</h3>
+        <div class="inline-form">
+          <div class="field">
+            <label for="attendance-entry-month">Bulan</label>
+            <input type="month" id="attendance-entry-month" value="${todayIso().slice(0, 7)}">
+          </div>
+          <div class="field">
+            <label for="attendance-entry-rate">Kehadiran (%)</label>
+            <input type="number" id="attendance-entry-rate" min="0" max="100" step="1" value="${latest ? latest.rate : 90}">
+          </div>
+          <button class="btn btn--secondary btn--small" id="btn-add-attendance-entry" type="button">Tambah</button>
+        </div>
+      `;
+    }
+
+    function renderModalBody() {
+      modalRoot.querySelector("#attendance-modal-body").innerHTML = bodyHtml();
+      const chartMount = document.getElementById("attendance-chart-mount");
+      renderAttendanceChart(chartMount, attendanceRatePoints(student), attendance.target);
+
+      modalRoot.querySelectorAll("[data-delete-entry]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const ok = confirm("Padam rekod kehadiran ini?");
+          if (!ok) return;
+          student.attendanceLog = student.attendanceLog.filter((e) => e.id !== btn.dataset.deleteEntry);
+          persist();
+          renderModalBody();
+          renderStudentTable();
+          renderDashboardStats();
+          showToast("Rekod kehadiran dipadam.");
+        });
+      });
+
+      document.getElementById("btn-add-attendance-entry").addEventListener("click", () => {
+        const month = document.getElementById("attendance-entry-month").value;
+        const rate = Number(document.getElementById("attendance-entry-rate").value);
+        if (!month || isNaN(rate) || rate < 0 || rate > 100) {
+          alert("Sila isi bulan dan peratus kehadiran yang sah (0-100).");
+          return;
+        }
+        const existing = student.attendanceLog.find((e) => e.month === month);
+        if (existing) {
+          const ok = confirm(`Rekod untuk ${formatMonth(month)} sudah wujud (${existing.rate}%). Gantikan dengan ${rate}%?`);
+          if (!ok) return;
+          existing.rate = rate;
+        } else {
+          student.attendanceLog.push({ id: uid("a"), month, rate });
+        }
+        persist();
+        renderModalBody();
+        renderStudentTable();
+        renderDashboardStats();
+        showToast("Rekod kehadiran bulanan disimpan.");
+      });
+    }
+
+    openModal(`
+      <div class="modal__head">
+        <h2>Kehadiran — ${escapeHtml(student.name)}</h2>
+        <button class="modal__close" type="button" data-close>&times;</button>
+      </div>
+      <p class="card__hint">${escapeHtml(student.className)}</p>
+      <div id="attendance-modal-body"></div>
+      <div class="modal__actions">
+        <button class="btn btn--small" type="button" data-close>Selesai</button>
+      </div>
+    `);
+    modalRoot.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeModal));
+    renderModalBody();
   }
 
   // ================================================================
@@ -483,14 +811,6 @@
     });
   }
 
-  function todayIso() {
-    // Static "today" for this demo build rather than a live clock —
-    // keeps seed data and freshly-added ledger entries in the same
-    // timeframe. Swap for `new Date().toISOString().slice(0,10)` if
-    // this ever needs to track the real clock.
-    return "2026-08-01";
-  }
-
   // ================================================================
   // TETAPAN — subjects, hafazan config, admin contact number
   // ================================================================
@@ -498,6 +818,7 @@
     renderSubjectChips();
     document.getElementById("hafazan-unit-select").value = state.settings.hafazan.unit;
     document.getElementById("hafazan-total-input").value = state.settings.hafazan.total;
+    document.getElementById("attendance-target-input").value = state.settings.attendance.target;
     renderContactCard();
   }
 
@@ -580,7 +901,7 @@
     if (affected > 0) {
       proceed = confirm(
         `${affected} pelajar sudah mempunyai markah direkodkan untuk "${name}". ` +
-        `Membuang subjek ini akan menyembunyikannya daripada senarai aktif dan borang markah baharu — ` +
+        `Membuang subjek ini akan menyembunyikannya daripada senarai aktif dan borang keputusan baharu — ` +
         `markah sedia ada pelajar TIDAK akan dipadam. Teruskan?`
       );
     } else {
@@ -588,9 +909,9 @@
     }
     if (!proceed) return;
     state.settings.subjects = state.settings.subjects.filter((s) => s !== name);
-    // Note: we deliberately do NOT touch student.marks[name] here — a
+    // Note: we deliberately do NOT touch student.exams[*][name] here — a
     // student's historical mark under a removed subject is preserved,
-    // just no longer shown in the active marks-entry form.
+    // just no longer shown in the active results-entry grid.
     persist();
     renderSubjectChips();
     renderStudentTable();
@@ -605,14 +926,27 @@
       return;
     }
     state.settings.hafazan = { unit, total: Math.round(total) };
-    // Clamp existing student progress so nobody ends up above the new target.
-    state.students.forEach((s) => { s.hafazan = Math.min(s.hafazan, state.settings.hafazan.total); });
     persist();
     renderStudentTable();
+    renderDashboardStats();
     showToast("Tetapan hafazan disimpan.");
   });
 
+  document.getElementById("btn-save-attendance").addEventListener("click", () => {
+    const target = Number(document.getElementById("attendance-target-input").value);
+    if (!target || target < 1 || target > 100) {
+      alert("Sila masukkan sasaran yang sah (1-100).");
+      return;
+    }
+    state.settings.attendance = { target: Math.round(target) };
+    persist();
+    renderStudentTable();
+    renderDashboardStats();
+    showToast("Tetapan kehadiran disimpan.");
+  });
+
   // ── Initial render ──────────────────────────────────────────────
+  renderDashboardStats();
   renderStudentTable();
   renderYuranPanel();
   renderSettings();

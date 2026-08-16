@@ -31,20 +31,35 @@
     <p id="parent-student-meta"></p>
   </section>
 
-  <section class="parent-grid">
-    <div class="card">
-      <h2>Markah</h2>
-      <ul class="marks-list" id="marks-list"></ul>
+  <div class="stat-grid" id="parent-stats"></div>
+
+  <section class="card">
+    <div class="card__head">
+      <h2>Keputusan Peperiksaan</h2>
+      <span class="panel-head__meta">Awal &middot; Pertengahan &middot; Akhir Tahun</span>
     </div>
-    <div class="card">
-      <h2>Kehadiran</h2>
-      <p class="stat-big" id="attendance-value"></p>
+    <p class="card__hint">Keputusan bagi ketiga-tiga peperiksaan tahunan. Sesi yang belum berlangsung dipaparkan sebagai "—".</p>
+    <div class="table-wrap" id="results-table-wrap"></div>
+  </section>
+
+  <section class="card">
+    <div class="card__head">
+      <h2>Kehadiran Bulanan</h2>
+      <span class="panel-head__meta" id="attendance-pct-meta"></span>
     </div>
-    <div class="card">
+    <p class="card__hint" id="attendance-caption"></p>
+    <div class="chart-card" id="attendance-chart-mount"></div>
+    <div class="table-wrap" id="attendance-table-wrap"></div>
+  </section>
+
+  <section class="card">
+    <div class="card__head">
       <h2 id="hafazan-title">Hafazan</h2>
-      <ul class="unit-strip" id="hafazan-strip" aria-hidden="true"></ul>
-      <p class="unit-strip__caption" id="hafazan-caption"></p>
+      <span class="panel-head__meta" id="hafazan-pct-meta"></span>
     </div>
+    <p class="card__hint" id="hafazan-caption"></p>
+    <div class="chart-card" id="hafazan-chart-mount"></div>
+    <div class="table-wrap" id="hafazan-table-wrap"></div>
   </section>
 
   <!-- Yuran section is created and appended by JS only when
@@ -52,6 +67,7 @@
 </main>
 
 <script src="data.js"></script>
+<script src="charts.js"></script>
 <script>
 (function () {
   // ── Session guard — this page is parent-only, and the studentId
@@ -77,40 +93,122 @@
   document.getElementById("parent-student-name").textContent = student.name;
   document.getElementById("parent-student-meta").textContent = `${student.className} · Ibu bapa: ${student.parentName}`;
 
-  // ── Marks — only current active subjects from Tetapan ────────────
-  const marksList = document.getElementById("marks-list");
-  const activeSubjects = state.settings.subjects.filter((s) => Object.prototype.hasOwnProperty.call(student.marks, s));
-  if (!activeSubjects.length) {
-    marksList.innerHTML = '<li class="empty-note">Belum ada markah direkodkan.</li>';
-  } else {
-    marksList.innerHTML = activeSubjects.map((subj) => {
-      const current = student.marks[subj];
-      const previous = student.previousMarks && student.previousMarks[subj];
-      let delta = "";
-      if (typeof previous === "number" && current !== previous) {
-        const diff = current - previous;
-        const up = diff > 0;
-        delta = ` <span class="mark-delta mark-delta--${up ? "up" : "down"}">(${up ? "↑" : "↓"} ${Math.abs(diff)}% dari bulan lepas)</span>`;
-      }
-      return `<li><span class="label">${escapeHtml(subj)}</span><span class="value">${current}%${delta}</span></li>`;
-    }).join("");
-  }
-
-  // ── Attendance ─────────────────────────────────────────────────
-  document.getElementById("attendance-value").textContent = student.attendance + "%";
-
-  // ── Hafazan — reads unit/total from admin-configured settings ───
   const hafazan = state.settings.hafazan;
-  document.getElementById("hafazan-title").textContent = `Hafazan (${hafazanUnitLabel(hafazan.unit, 2)})`;
-  const stripEl = document.getElementById("hafazan-strip");
-  stripEl.innerHTML = "";
-  for (let i = 0; i < hafazan.total; i++) {
-    const li = document.createElement("li");
-    if (i < student.hafazan) li.classList.add("is-filled");
-    stripEl.appendChild(li);
+  const hafazanTotal = getHafazanTotal(student);
+  const hafazanPct = Math.min(100, Math.round((hafazanTotal / hafazan.total) * 100));
+
+  // ── Top stat tiles ────────────────────────────────────────────
+  const latestExam = EXAM_PERIODS.slice().reverse().find((exam) => examAverage(state, student, exam.key) !== null);
+  const latestAttendance = getLatestAttendanceEntry(student);
+  document.getElementById("parent-stats").innerHTML = `
+    <div class="stat-tile">
+      <span class="stat-tile__label">Kehadiran</span>
+      <div class="stat-tile__value">${latestAttendance ? latestAttendance.rate + "%" : "—"}</div>
+      <p class="stat-tile__sub">${latestAttendance ? formatMonth(latestAttendance.month) : "Belum ada rekod"}</p>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-tile__label">Purata Terkini</span>
+      <div class="stat-tile__value">${latestExam ? examAverage(state, student, latestExam.key) + "%" : "—"}</div>
+      <p class="stat-tile__sub">${latestExam ? latestExam.label : "Belum ada keputusan"}</p>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-tile__label">Kemajuan Hafazan</span>
+      <div class="stat-tile__value">${hafazanPct}%</div>
+      <p class="stat-tile__sub">${hafazanTotal} / ${hafazan.total} ${hafazanUnitLabel(hafazan.unit, hafazan.total)}</p>
+    </div>
+  `;
+
+  // ── Keputusan Peperiksaan — subjects x 3 fixed exam sittings ────
+  const activeSubjects = state.settings.subjects.filter((subj) =>
+    EXAM_PERIODS.some((exam) => Object.prototype.hasOwnProperty.call(student.exams[exam.key], subj))
+  );
+  const resultsWrap = document.getElementById("results-table-wrap");
+  if (!activeSubjects.length) {
+    resultsWrap.innerHTML = '<p class="empty-note">Belum ada keputusan peperiksaan direkodkan.</p>';
+  } else {
+    const bodyRows = activeSubjects.map((subj) => {
+      const cells = EXAM_PERIODS.map((exam) => {
+        const val = student.exams[exam.key][subj];
+        return `<td>${typeof val === "number" ? val + "%" : '<span class="cell-muted">—</span>'}</td>`;
+      }).join("");
+      return `<tr><td>${escapeHtml(subj)}</td>${cells}</tr>`;
+    }).join("");
+    const avgCells = EXAM_PERIODS.map((exam) => {
+      const avg = examAverage(state, student, exam.key);
+      return `<td class="col-num">${avg === null ? "—" : avg + "%"}</td>`;
+    }).join("");
+    resultsWrap.innerHTML = `
+      <table class="data-table">
+        <thead>
+          <tr><th>Subjek</th>${EXAM_PERIODS.map((exam) => `<th>${exam.label}</th>`).join("")}</tr>
+        </thead>
+        <tbody>${bodyRows}</tbody>
+        <tfoot><tr><td>Purata</td>${avgCells}</tr></tfoot>
+      </table>
+    `;
   }
+
+  // ── Kehadiran — monthly log rendered as table + trend chart ─────
+  const attendanceSettings = state.settings.attendance;
+  const attendanceAverage = getAttendanceAverage(student);
+  document.getElementById("attendance-pct-meta").textContent =
+    attendanceAverage === null ? "" : `Purata ${attendanceAverage}% · Sasaran ${attendanceSettings.target}%`;
+  document.getElementById("attendance-caption").textContent =
+    "Kehadiran direkod setiap bulan, dibandingkan dengan sasaran madrasah.";
+
+  const attendancePoints = attendanceRatePoints(student);
+  renderAttendanceChart(document.getElementById("attendance-chart-mount"), attendancePoints, attendanceSettings.target);
+
+  const attendanceTableWrap = document.getElementById("attendance-table-wrap");
+  if (!attendancePoints.length) {
+    attendanceTableWrap.innerHTML = '<p class="empty-note">Belum ada rekod kehadiran bulanan.</p>';
+  } else {
+    const attendanceRowsDesc = attendancePoints.slice().reverse();
+    attendanceTableWrap.innerHTML = `
+      <table class="data-table">
+        <thead><tr><th>Bulan</th><th>Kehadiran</th></tr></thead>
+        <tbody>
+          ${attendanceRowsDesc.map((p) => `
+            <tr>
+              <td>${formatMonth(p.entry.month)}</td>
+              <td>${p.entry.rate}%</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  // ── Hafazan — weekly log rendered as table + cumulative chart ───
+  document.getElementById("hafazan-title").textContent = `Hafazan (${hafazanUnitLabel(hafazan.unit, 2)})`;
+  document.getElementById("hafazan-pct-meta").textContent = `${hafazanPct}% daripada sasaran`;
   document.getElementById("hafazan-caption").textContent =
-    `${student.hafazan} daripada ${hafazan.total} ${hafazanUnitLabel(hafazan.unit, hafazan.total)} dihafaz.`;
+    `${hafazanTotal} daripada ${hafazan.total} ${hafazanUnitLabel(hafazan.unit, hafazan.total)} dihafaz, direkodkan mengikut minggu.`;
+
+  const points = hafazanCumulativePoints(student);
+  renderHafazanChart(document.getElementById("hafazan-chart-mount"), points, hafazan.total, hafazanUnitLabel(hafazan.unit, hafazan.total));
+
+  const hafazanTableWrap = document.getElementById("hafazan-table-wrap");
+  if (!points.length) {
+    hafazanTableWrap.innerHTML = '<p class="empty-note">Belum ada rekod hafazan mingguan.</p>';
+  } else {
+    const rowsDesc = points.slice().reverse();
+    hafazanTableWrap.innerHTML = `
+      <table class="data-table">
+        <thead><tr><th>Minggu (Tarikh)</th><th>Tambahan</th><th>Catatan</th><th>Terkumpul</th></tr></thead>
+        <tbody>
+          ${rowsDesc.map((p) => `
+            <tr>
+              <td>${formatDate(p.entry.date)}</td>
+              <td>+${p.entry.amount} ${hafazanUnitLabel(hafazan.unit, p.entry.amount)}</td>
+              <td>${p.entry.note ? escapeHtml(p.entry.note) : '<span class="cell-muted">—</span>'}</td>
+              <td>${p.cumulative}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
 
   // ── Yuran — only built into the DOM when FEATURES.finance is true ──
   if (FEATURES.finance) {

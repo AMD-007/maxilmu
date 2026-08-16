@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Maahad Cahaya Ilmu — Tahfiz &amp; Akademik, Kuala Terengganu</title>
 <meta name="description" content="Maahad Cahaya Ilmu di Kuala Terengganu — pondok tahfiz yang menggabungkan hafazan Al-Quran dengan pendidikan akademik.">
+<meta name="theme-color" content="#1B6B62">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ms_MY">
+<meta property="og:site_name" content="Maahad Cahaya Ilmu">
+<meta property="og:title" content="Maahad Cahaya Ilmu — Tahfiz &amp; Akademik, Kuala Terengganu">
+<meta property="og:description" content="Pondok tahfiz di Kuala Terengganu yang menggabungkan hafazan Al-Quran dengan pendidikan akademik — dengan kemajuan anak dihantar terus ke telefon ibu bapa.">
+<meta property="og:image" content="logo.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Maahad Cahaya Ilmu — Tahfiz &amp; Akademik, Kuala Terengganu">
+<meta name="twitter:description" content="Pondok tahfiz di Kuala Terengganu yang menggabungkan hafazan Al-Quran dengan pendidikan akademik.">
+<meta name="twitter:image" content="logo.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
@@ -19,6 +30,10 @@
 <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/fraunces/v38/6NU78FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0KxC9TeA.woff2" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Amiri:ital,wght@0,400;0,700;1,400&family=Public+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<!-- Shares the portal's stat-tile component (app/app.css) so the
+     preview card below is pixel-consistent with the real parent
+     portal, not a lookalike built twice. -->
+<link rel="stylesheet" href="app/app.css">
 </head>
 <body>
 
@@ -135,29 +150,109 @@
   <div class="maxilmu__head">
     <span class="eyebrow">Untuk Ibu Bapa — MaxIlmu</span>
     <h2>Anda tak perlu tunggu peperiksaan untuk tahu.</h2>
-    <p>Setiap bulan, kemajuan hafazan anak anda kelihatan sejelas juzuk yang telah dihafaz — bersama markah dan kehadiran, terus ke telefon anda.</p>
+    <p>Hafazan anak anda direkod setiap minggu, kehadiran setiap bulan — kedua-duanya dipaparkan sebagai graf kemajuan. Keputusan tiga peperiksaan tahunan — awal, pertengahan, akhir tahun — kelihatan dalam satu jadual mudah, terus ke telefon anda.</p>
   </div>
 
   <div class="report">
     <div class="report__inner">
       <div class="report__head">
-        <h3>Juzuk Dihafaz</h3>
-        <span>ILUSTRASI LAPORAN · JULAI 2026</span>
+        <h3>Pratonton Portal Ibu Bapa</h3>
+        <span>ILUSTRASI PAPARAN · MINGGU 30, 2026</span>
       </div>
-      <ul class="juz-strip" aria-hidden="true">
-        <li class="is-filled"></li><li class="is-filled"></li><li class="is-filled"></li><li class="is-filled"></li><li class="is-filled"></li>
-        <li class="is-filled"></li><li class="is-filled"></li><li class="is-filled"></li><li class="is-filled"></li><li class="is-filled"></li>
-        <li class="is-filled"></li><li class="is-filled"></li><li></li><li></li><li></li>
-        <li></li><li></li><li></li><li></li><li></li>
-        <li></li><li></li><li></li><li></li><li></li>
-        <li></li><li></li><li></li><li></li><li></li>
-      </ul>
-      <p class="juz-strip__caption">12 daripada 30 juzuk — contoh paparan, bukan rekod pelajar sebenar.</p>
-      <ul class="report__lines">
-        <li><span class="label">Markah</span><span class="value">82%</span></li>
-        <li><span class="label">Kehadiran</span><span class="value">96%</span></li>
-        <li><span class="label">Hafazan</span><span class="value">Juzuk 12 / 30</span></li>
-      </ul>
+
+      <div class="stat-grid" aria-hidden="true">
+        <div class="stat-tile">
+          <span class="stat-tile__label">Kehadiran</span>
+          <div class="stat-tile__value">96%</div>
+          <p class="stat-tile__sub">Julai 2026</p>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-tile__label">Purata Terkini</span>
+          <div class="stat-tile__value">82%</div>
+          <p class="stat-tile__sub">Akhir Tahun</p>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-tile__label">Kemajuan Hafazan</span>
+          <div class="stat-tile__value">40%</div>
+          <p class="stat-tile__sub">12 / 30 Juzuk</p>
+        </div>
+      </div>
+
+      <h4 class="report__subhead">Keputusan Peperiksaan</h4>
+      <div class="report__exams" aria-hidden="true">
+        <div class="report__exam">
+          <span class="report__exam-label">Awal Tahun</span>
+          <span class="report__exam-value">63%</span>
+        </div>
+        <div class="report__exam">
+          <span class="report__exam-label">Pertengahan</span>
+          <span class="report__exam-value">70%</span>
+        </div>
+        <div class="report__exam">
+          <span class="report__exam-label">Akhir Tahun</span>
+          <span class="report__exam-value">82%</span>
+        </div>
+      </div>
+
+      <h4 class="report__subhead">Kehadiran Bulanan</h4>
+      <div class="report__chart" aria-hidden="true">
+        <svg viewBox="0 0 600 200" role="img" aria-label="Graf kehadiran bulanan, contoh 96% berbanding sasaran 90%">
+          <defs>
+            <linearGradient id="reportAttendanceFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--malachite)" stop-opacity="0.28"/>
+              <stop offset="100%" stop-color="var(--malachite)" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <line x1="30" y1="30" x2="586" y2="30" class="chart-target-line"/>
+          <text x="586" y="25" class="chart-target-label" text-anchor="end">Sasaran: 90%</text>
+          <path d="M30,23.6 L122.7,22 L215.3,25.2 L308,18.8 L400.7,20.4 L493.3,22 L586,20.4 L586,174 L30,174 Z" fill="url(#reportAttendanceFill)"/>
+          <path d="M30,23.6 L122.7,22 L215.3,25.2 L308,18.8 L400.7,20.4 L493.3,22 L586,20.4" class="chart-line"/>
+          <circle cx="30" cy="23.6" r="3.2" class="chart-dot"/>
+          <circle cx="122.7" cy="22" r="3.2" class="chart-dot"/>
+          <circle cx="215.3" cy="25.2" r="3.2" class="chart-dot"/>
+          <circle cx="308" cy="18.8" r="3.2" class="chart-dot"/>
+          <circle cx="400.7" cy="20.4" r="3.2" class="chart-dot"/>
+          <circle cx="493.3" cy="22" r="3.2" class="chart-dot"/>
+          <circle cx="586" cy="20.4" r="3.2" class="chart-dot"/>
+          <text x="30" y="194" class="chart-axis-label" text-anchor="middle">Jan</text>
+          <text x="215.3" y="194" class="chart-axis-label" text-anchor="middle">Mac</text>
+          <text x="400.7" y="194" class="chart-axis-label" text-anchor="middle">Mei</text>
+          <text x="586" y="194" class="chart-axis-label" text-anchor="middle">Jul</text>
+          <text x="30" y="18" class="chart-axis-label" text-anchor="start">100</text>
+          <text x="30" y="174" class="chart-axis-label" text-anchor="start">0</text>
+        </svg>
+      </div>
+      <p class="report__caption">Kehadiran direkod setiap bulan dan dibandingkan dengan sasaran madrasah. Contoh paparan, bukan rekod pelajar sebenar.</p>
+
+      <h4 class="report__subhead">Hafazan Mingguan</h4>
+      <div class="report__chart" aria-hidden="true">
+        <svg viewBox="0 0 600 200" role="img" aria-label="Graf kemajuan hafazan mingguan, contoh 12 daripada 30 Juzuk">
+          <defs>
+            <linearGradient id="reportChartFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--malachite)" stop-opacity="0.28"/>
+              <stop offset="100%" stop-color="var(--malachite)" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <line x1="30" y1="24" x2="586" y2="24" class="chart-target-line"/>
+          <text x="586" y="19" class="chart-target-label" text-anchor="end">Sasaran: 30 Juzuk</text>
+          <path d="M30,169 L122.7,159 L215.3,149 L308,141.5 L400.7,134 L493.3,124 L586,114 L586,174 L30,174 Z" fill="url(#reportChartFill)"/>
+          <path d="M30,169 L122.7,159 L215.3,149 L308,141.5 L400.7,134 L493.3,124 L586,114" class="chart-line"/>
+          <circle cx="30" cy="169" r="3.2" class="chart-dot"/>
+          <circle cx="122.7" cy="159" r="3.2" class="chart-dot"/>
+          <circle cx="215.3" cy="149" r="3.2" class="chart-dot"/>
+          <circle cx="308" cy="141.5" r="3.2" class="chart-dot"/>
+          <circle cx="400.7" cy="134" r="3.2" class="chart-dot"/>
+          <circle cx="493.3" cy="124" r="3.2" class="chart-dot"/>
+          <circle cx="586" cy="114" r="3.2" class="chart-dot"/>
+          <text x="30" y="194" class="chart-axis-label" text-anchor="middle">Jan</text>
+          <text x="215.3" y="194" class="chart-axis-label" text-anchor="middle">Mac</text>
+          <text x="400.7" y="194" class="chart-axis-label" text-anchor="middle">Mei</text>
+          <text x="586" y="194" class="chart-axis-label" text-anchor="middle">Jul</text>
+          <text x="30" y="18" class="chart-axis-label" text-anchor="start">32</text>
+          <text x="30" y="174" class="chart-axis-label" text-anchor="start">0</text>
+        </svg>
+      </div>
+      <p class="report__caption">12 daripada 30 juzuk — dikemas kini oleh guru tahfiz setiap minggu. Contoh paparan, bukan rekod pelajar sebenar.</p>
     </div>
   </div>
 </section>
