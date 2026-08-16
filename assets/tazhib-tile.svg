@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <!-- Illuminated-manuscript border tile: a real 9-slice (120x120,
+       30px corners, 60px edge strips repeated by border-image-repeat:
+       round). Rendered at 13-26px on the page, so shapes are kept
+       bold and chunky rather than finely detailed — fine multi-point
+       stars and thin rings just blur into a dot at that scale.
+       Corner: an 8-point star polygon (najma) with a shallow point
+       ratio so it reads as a distinct rosette, not a spike-blur.
+       Edge: a zigzag strap (chevron) instead of a straight line, so
+       the "interlocking" character survives the downscale, with a
+       diamond knot at the chevron's peak. -->
+  <defs>
+    <g id="star">
+      <path fill="#3D7A5C" stroke="#B8934A" stroke-width="1.5" stroke-linejoin="round"
+        d="M0,-13 L3.25,-7.85 L9.19,-9.19 L7.85,-3.25 L13,0 L7.85,3.25 L9.19,9.19 L3.25,7.85
+           L0,13 L-3.25,7.85 L-9.19,9.19 L-7.85,3.25 L-13,0 L-7.85,-3.25 L-9.19,-9.19 L-3.25,-7.85 Z"/>
+    </g>
+    <g id="chainH">
+      <path fill="none" stroke="#B8934A" stroke-width="1.5" stroke-linejoin="round"
+        d="M0,4 L15,-4 L30,4 L45,-4 L60,4"/>
+      <rect x="25" y="-1" width="10" height="10" fill="#3D7A5C" stroke="#B8934A" stroke-width="1"
+        transform="rotate(45 30 4)"/>
+    </g>
+    <g id="chainV">
+      <path fill="none" stroke="#B8934A" stroke-width="1.5" stroke-linejoin="round"
+        d="M4,0 L-4,15 L4,30 L-4,45 L4,60"/>
+      <rect x="-1" y="25" width="10" height="10" fill="#3D7A5C" stroke="#B8934A" stroke-width="1"
+        transform="rotate(45 4 30)"/>
+    </g>
+  </defs>
+  <use href="#star" x="15" y="15"/>
+  <use href="#star" x="105" y="15"/>
+  <use href="#star" x="15" y="105"/>
+  <use href="#star" x="105" y="105"/>
+  <use href="#chainH" x="30" y="15"/>
+  <use href="#chainH" x="30" y="105"/>
+  <use href="#chainV" x="15" y="30"/>
+  <use href="#chainV" x="105" y="30"/>
+</svg>

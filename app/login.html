@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log Masuk — Maahad Cahaya Ilmu</title>
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Public+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body class="portal-body">
+
+<main class="login-shell">
+  <div class="login-brand">
+    <span class="mark-crop login-brand__mark"><img src="../logo.png" alt="Lambang Maahad Cahaya Ilmu"></span>
+    <h1>Maahad Cahaya Ilmu</h1>
+    <p>Sistem Rekod Pelajar</p>
+    <p class="login-brand__credit">Dikuasakan oleh MaxIlmu</p>
+  </div>
+
+  <p class="login-frame-note">Bayangkan skrin ini di telefon setiap ibu bapa pelajar anda.</p>
+
+  <div class="login-grid">
+    <section class="login-card">
+      <h2>Admin</h2>
+      <p>Urus rekod pelajar, markah, hafazan dan tetapan madrasah.</p>
+      <button class="btn" id="btn-admin-login" type="button">Masuk sebagai Admin</button>
+    </section>
+
+    <section class="login-card">
+      <h2>Ibu Bapa</h2>
+      <p>Pilih nama anak anda untuk melihat kemajuan.</p>
+      <div class="field">
+        <label for="parent-student-select">Nama Pelajar</label>
+        <select id="parent-student-select"></select>
+      </div>
+      <button class="btn" id="btn-parent-login" type="button">Masuk sebagai Ibu Bapa</button>
+    </section>
+  </div>
+
+  <p class="login-demo-note">Ini adalah demo — tiada kata laluan sebenar diperlukan dan semua data pelajar di sini adalah contoh, bukan rekod sebenar.</p>
+  <a class="login-back" href="../index.html">← Kembali ke laman utama</a>
+</main>
+
+<script src="data.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const state = loadState();
+
+  const select = document.getElementById("parent-student-select");
+  state.students
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .forEach((student) => {
+      const opt = document.createElement("option");
+      opt.value = student.id;
+      opt.textContent = `${student.name} (${student.className})`;
+      select.appendChild(opt);
+    });
+
+  document.getElementById("btn-admin-login").addEventListener("click", () => {
+    setSession({ role: "admin" });
+    window.location.href = "admin.html";
+  });
+
+  document.getElementById("btn-parent-login").addEventListener("click", () => {
+    const studentId = select.value;
+    if (!studentId) return;
+    setSession({ role: "parent", studentId });
+    window.location.href = "parent.html";
+  });
+});
+</script>
+</body>
+</html>

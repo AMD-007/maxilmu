@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kemajuan Anak — Maahad Cahaya Ilmu</title>
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Public+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body class="portal-body">
+
+<header class="portal-header">
+  <div class="portal-header__brand">
+    <span class="mark-crop portal-header__mark"><img src="../logo.png" alt="Lambang Maahad Cahaya Ilmu"></span>
+    <div>
+      <strong>Maahad Cahaya Ilmu</strong>
+      <span class="portal-header__sub">Paparan Ibu Bapa</span>
+    </div>
+  </div>
+  <div class="portal-header__actions">
+    <span class="portal-header__credit">Dikuasakan oleh MaxIlmu</span>
+    <button class="btn btn--ghost btn--small" id="btn-logout" type="button">Log Keluar</button>
+  </div>
+</header>
+
+<main class="portal-main container">
+  <section class="card parent-summary">
+    <h1 id="parent-student-name"></h1>
+    <p id="parent-student-meta"></p>
+  </section>
+
+  <section class="parent-grid">
+    <div class="card">
+      <h2>Markah</h2>
+      <ul class="marks-list" id="marks-list"></ul>
+    </div>
+    <div class="card">
+      <h2>Kehadiran</h2>
+      <p class="stat-big" id="attendance-value"></p>
+    </div>
+    <div class="card">
+      <h2 id="hafazan-title">Hafazan</h2>
+      <ul class="unit-strip" id="hafazan-strip" aria-hidden="true"></ul>
+      <p class="unit-strip__caption" id="hafazan-caption"></p>
+    </div>
+  </section>
+
+  <!-- Yuran section is created and appended by JS only when
+       FEATURES.finance is true — nothing is rendered here otherwise. -->
+</main>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  // ── Session guard — this page is parent-only, and the studentId
+  //    in the session must still exist (a demo reset can invalidate it) ──
+  const session = getSession();
+  const state = loadState();
+  const student = session && session.role === "parent" ? getStudent(state, session.studentId) : null;
+  if (!student) {
+    clearSession();
+    window.location.href = "login.html";
+    return;
+  }
+
+  document.getElementById("btn-logout").addEventListener("click", () => {
+    clearSession();
+    window.location.href = "login.html";
+  });
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  document.getElementById("parent-student-name").textContent = student.name;
+  document.getElementById("parent-student-meta").textContent = `${student.className} · Ibu bapa: ${student.parentName}`;
+
+  // ── Marks — only current active subjects from Tetapan ────────────
+  const marksList = document.getElementById("marks-list");
+  const activeSubjects = state.settings.subjects.filter((s) => Object.prototype.hasOwnProperty.call(student.marks, s));
+  if (!activeSubjects.length) {
+    marksList.innerHTML = '<li class="empty-note">Belum ada markah direkodkan.</li>';
+  } else {
+    marksList.innerHTML = activeSubjects.map((subj) => {
+      const current = student.marks[subj];
+      const previous = student.previousMarks && student.previousMarks[subj];
+      let delta = "";
+      if (typeof previous === "number" && current !== previous) {
+        const diff = current - previous;
+        const up = diff > 0;
+        delta = ` <span class="mark-delta mark-delta--${up ? "up" : "down"}">(${up ? "↑" : "↓"} ${Math.abs(diff)}% dari bulan lepas)</span>`;
+      }
+      return `<li><span class="label">${escapeHtml(subj)}</span><span class="value">${current}%${delta}</span></li>`;
+    }).join("");
+  }
+
+  // ── Attendance ─────────────────────────────────────────────────
+  document.getElementById("attendance-value").textContent = student.attendance + "%";
+
+  // ── Hafazan — reads unit/total from admin-configured settings ───
+  const hafazan = state.settings.hafazan;
+  document.getElementById("hafazan-title").textContent = `Hafazan (${hafazanUnitLabel(hafazan.unit, 2)})`;
+  const stripEl = document.getElementById("hafazan-strip");
+  stripEl.innerHTML = "";
+  for (let i = 0; i < hafazan.total; i++) {
+    const li = document.createElement("li");
+    if (i < student.hafazan) li.classList.add("is-filled");
+    stripEl.appendChild(li);
+  }
+  document.getElementById("hafazan-caption").textContent =
+    `${student.hafazan} daripada ${hafazan.total} ${hafazanUnitLabel(hafazan.unit, hafazan.total)} dihafaz.`;
+
+  // ── Yuran — only built into the DOM when FEATURES.finance is true ──
+  if (FEATURES.finance) {
+    const mount = document.createElement("section");
+    mount.className = "card";
+    mount.id = "yuran-mount";
+    document.querySelector(".portal-main").appendChild(mount);
+    const balance = getStudentBalance(student);
+    const waText = encodeURIComponent(`Assalamualaikum, saya ibu bapa kepada ${student.name} (${student.className}). Saya ingin bertanya mengenai baki yuran.`);
+    mount.innerHTML = `
+      <h2>Yuran</h2>
+      <p class="card__hint">Baki semasa: <strong>${formatMoney(balance)}</strong></p>
+      <div class="table-wrap" style="margin-bottom:1rem;">
+        ${student.fees.ledger.length ? `
+          <table class="data-table">
+            <thead><tr><th>Tarikh</th><th>Perkara</th><th>Jumlah</th></tr></thead>
+            <tbody>
+              ${student.fees.ledger.slice().sort((a, b) => a.date.localeCompare(b.date)).map((entry) => `
+                <tr>
+                  <td>${formatDate(entry.date)}</td>
+                  <td>${escapeHtml(entry.description)}</td>
+                  <td>${entry.type === "charge" ? "+" : "-"}${formatMoney(entry.amount)}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>` : '<p class="empty-note">Tiada rekod yuran lagi.</p>'}
+      </div>
+      <a class="btn btn--small" href="https://wa.me/${state.settings.adminContactNumber}?text=${waText}" target="_blank" rel="noopener">Hubungi Admin Tentang Yuran</a>
+    `;
+  }
+})();
+</script>
+</body>
+</html>

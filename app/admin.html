@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Admin — Maahad Cahaya Ilmu</title>
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Public+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body class="portal-body">
+
+<header class="portal-header">
+  <div class="portal-header__brand">
+    <span class="mark-crop portal-header__mark"><img src="../logo.png" alt="Lambang Maahad Cahaya Ilmu"></span>
+    <div>
+      <strong>Maahad Cahaya Ilmu</strong>
+      <span class="portal-header__sub">Panel Admin</span>
+    </div>
+  </div>
+  <div class="portal-header__actions">
+    <span class="portal-header__credit">Dikuasakan oleh MaxIlmu</span>
+    <button class="btn btn--ghost btn--small" id="btn-logout" type="button">Log Keluar</button>
+  </div>
+</header>
+
+<nav class="portal-tabs" id="portal-tabs">
+  <button class="portal-tabs__btn is-active" data-tab="pelajar" type="button">Pelajar</button>
+  <!-- Yuran tab button is inserted by JS only when FEATURES.finance is true — see renderYuranPanel() -->
+  <button class="portal-tabs__btn" data-tab="tetapan" type="button">Tetapan</button>
+</nav>
+
+<main class="portal-main container">
+
+  <!-- ============================================================
+       PELAJAR — student roster + marks/hafazan/attendance entry
+       ============================================================ -->
+  <section class="portal-panel is-active" data-panel="pelajar" id="panel-pelajar">
+    <div class="panel-head">
+      <h1>Pelajar</h1>
+      <span class="panel-head__meta" id="student-count-meta"></span>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>Kelas</th>
+            <th>Markah Purata</th>
+            <th>Kehadiran</th>
+            <th id="hafazan-col-head">Hafazan</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="student-table-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Yuran panel does not exist in this markup at all — it is created
+       and appended to <main> by JS only when FEATURES.finance is true.
+       See renderYuranPanel() below. When the flag is false, no Yuran
+       tab, panel, or content of any kind is ever added to the DOM. -->
+
+  <!-- ============================================================
+       TETAPAN — subjects, hafazan config, contact number, reset
+       ============================================================ -->
+  <section class="portal-panel" data-panel="tetapan" id="panel-tetapan">
+    <div class="panel-head"><h1>Tetapan</h1></div>
+    <div class="settings-grid">
+      <div class="card" id="settings-subjects-card">
+        <h2>Senarai Subjek</h2>
+        <p class="card__hint">Subjek yang tersedia semasa memasukkan markah pelajar. Setiap madrasah boleh berbeza.</p>
+        <div class="chip-list" id="subject-chip-list"></div>
+        <div class="inline-form">
+          <div class="field">
+            <label for="new-subject-input">Tambah subjek</label>
+            <input type="text" id="new-subject-input" placeholder="Cth: Tarannum">
+          </div>
+          <button class="btn btn--secondary btn--small" id="btn-add-subject" type="button">Tambah</button>
+        </div>
+      </div>
+
+      <div class="card" id="settings-hafazan-card">
+        <h2>Tetapan Hafazan</h2>
+        <p class="card__hint">Unit dan sasaran hafazan yang digunakan di panel ini dan paparan ibu bapa.</p>
+        <div class="inline-form">
+          <div class="field">
+            <label for="hafazan-unit-select">Unit</label>
+            <select id="hafazan-unit-select">
+              <option value="juz">Juzuk</option>
+              <option value="surah">Surah</option>
+              <option value="hizb">Hizb</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="hafazan-total-input">Jumlah sasaran</label>
+            <input type="number" id="hafazan-total-input" min="1" step="1">
+          </div>
+          <button class="btn btn--secondary btn--small" id="btn-save-hafazan" type="button">Simpan</button>
+        </div>
+      </div>
+
+      <!-- Admin WhatsApp contact card is inserted by JS only when
+           FEATURES.finance is true — it configures a number that's
+           only ever used by the Yuran contact link. See renderSettings(). -->
+
+      <div class="card danger-zone">
+        <h2>Zon Bahaya</h2>
+        <p class="card__hint">Set semula semua data demo (pelajar, markah, yuran, tetapan) kepada data contoh asal. Ini akan log keluar semua sesi.</p>
+        <button class="btn btn--danger btn--small" id="btn-reset-demo" type="button">Reset Data Demo</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="modal-overlay" id="modal-overlay" hidden>
+  <div class="modal" id="modal-root"></div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  // ── Session guard — this page is admin-only ──────────────────
+  const session = getSession();
+  if (!session || session.role !== "admin") {
+    window.location.href = "login.html";
+    return;
+  }
+
+  let state = loadState();
+
+  // ── Small UI helpers ──────────────────────────────────────────
+  const modalOverlay = document.getElementById("modal-overlay");
+  const modalRoot = document.getElementById("modal-root");
+  function openModal(html) {
+    modalRoot.innerHTML = html;
+    modalOverlay.hidden = false;
+  }
+  function closeModal() {
+    modalOverlay.hidden = true;
+    modalRoot.innerHTML = "";
+  }
+  modalOverlay.addEventListener("click", (e) => { if (e.target === modalOverlay) closeModal(); });
+
+  let toastTimer = null;
+  const toastEl = document.getElementById("toast");
+  function showToast(message) {
+    toastEl.textContent = message;
+    toastEl.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toastEl.hidden = true; }, 3200);
+  }
+
+  function persist() { saveState(state); }
+
+  // ── Logout ──────────────────────────────────────────────────
+  document.getElementById("btn-logout").addEventListener("click", () => {
+    clearSession();
+    window.location.href = "login.html";
+  });
+
+  // ── Reset demo data ─────────────────────────────────────────
+  document.getElementById("btn-reset-demo").addEventListener("click", () => {
+    const ok = confirm("Ini akan memadam semua data demo (pelajar, markah, yuran, tetapan) dan set semula kepada data contoh asal, serta log keluar sesi ini. Teruskan?");
+    if (!ok) return;
+    resetDemoData();
+    window.location.href = "login.html";
+  });
+
+  // ── Tabs ──────────────────────────────────────────────────────
+  // Queried live (not cached) so a Yuran tab/panel inserted later by
+  // renderYuranPanel() is picked up without extra wiring.
+  const tabsNav = document.getElementById("portal-tabs");
+  function activateTab(tabName) {
+    tabsNav.querySelectorAll(".portal-tabs__btn").forEach((btn) => btn.classList.toggle("is-active", btn.dataset.tab === tabName));
+    document.querySelectorAll(".portal-panel").forEach((panel) => { panel.hidden = panel.dataset.panel !== tabName; });
+  }
+  tabsNav.addEventListener("click", (e) => {
+    const btn = e.target.closest(".portal-tabs__btn");
+    if (btn) activateTab(btn.dataset.tab);
+  });
+
+  // ================================================================
+  // PELAJAR — roster table + marks/hafazan/attendance entry modal
+  // ================================================================
+  function activeAverage(student) {
+    const subjects = state.settings.subjects;
+    const values = subjects
+      .filter((subj) => Object.prototype.hasOwnProperty.call(student.marks, subj))
+      .map((subj) => student.marks[subj]);
+    if (!values.length) return null;
+    return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+  }
+
+  function renderStudentTable() {
+    const unit = state.settings.hafazan.unit;
+    document.getElementById("hafazan-col-head").textContent = `Hafazan (${hafazanUnitLabel(unit, 2)})`;
+    document.getElementById("student-count-meta").textContent = `${state.students.length} pelajar`;
+
+    const body = document.getElementById("student-table-body");
+    body.innerHTML = "";
+    state.students
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .forEach((student) => {
+        const avg = activeAverage(student);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(student.name)}</td>
+          <td>${escapeHtml(student.className)}</td>
+          <td>${avg === null ? "—" : avg + "%"}</td>
+          <td>${student.attendance}%</td>
+          <td>${student.hafazan} / ${state.settings.hafazan.total}</td>
+          <td><button class="btn btn--secondary btn--small" data-edit-student="${student.id}" type="button">Kemaskini</button></td>
+        `;
+        body.appendChild(tr);
+      });
+
+    body.querySelectorAll("[data-edit-student]").forEach((btn) => {
+      btn.addEventListener("click", () => openStudentModal(btn.dataset.editStudent));
+    });
+  }
+
+  function openStudentModal(studentId) {
+    const student = getStudent(state, studentId);
+    if (!student) return;
+    const hafazan = state.settings.hafazan;
+
+    const marksFields = state.settings.subjects.map((subj) => {
+      const val = Object.prototype.hasOwnProperty.call(student.marks, subj) ? student.marks[subj] : "";
+      const safeId = "mark_" + subj.replace(/[^a-z0-9]/gi, "_");
+      return `
+        <div class="field">
+          <label for="${safeId}">${escapeHtml(subj)}</label>
+          <input type="number" min="0" max="100" id="${safeId}" data-subject="${escapeHtml(subj)}" value="${val}">
+        </div>`;
+    }).join("");
+
+    openModal(`
+      <div class="modal__head">
+        <h2>${escapeHtml(student.name)}</h2>
+        <button class="modal__close" type="button" data-close>&times;</button>
+      </div>
+      <p class="card__hint">${escapeHtml(student.className)} · Ibu bapa: ${escapeHtml(student.parentName)}</p>
+      <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Markah</h3>
+      ${marksFields || '<p class="empty-note">Tiada subjek dalam Tetapan lagi.</p>'}
+      <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Kehadiran &amp; Hafazan</h3>
+      <div class="field">
+        <label for="attendance-input">Kehadiran (%)</label>
+        <input type="number" min="0" max="100" id="attendance-input" value="${student.attendance}">
+      </div>
+      <div class="field">
+        <label for="hafazan-input">Hafazan (${hafazanUnitLabel(hafazan.unit, 2)}, daripada ${hafazan.total})</label>
+        <input type="number" min="0" max="${hafazan.total}" id="hafazan-input" value="${student.hafazan}">
+      </div>
+      <div class="modal__actions">
+        <button class="btn btn--ghost btn--small" type="button" data-close style="color:var(--ink); border-color: rgba(43,35,24,0.2);">Batal</button>
+        <button class="btn btn--small" type="button" id="btn-save-student">Simpan</button>
+      </div>
+    `);
+
+    modalRoot.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeModal));
+    document.getElementById("btn-save-student").addEventListener("click", () => {
+      modalRoot.querySelectorAll("input[data-subject]").forEach((input) => {
+        const subj = input.dataset.subject;
+        if (input.value === "") { delete student.marks[subj]; return; }
+        student.marks[subj] = Math.max(0, Math.min(100, Number(input.value)));
+      });
+      const attendanceVal = Number(document.getElementById("attendance-input").value);
+      student.attendance = Math.max(0, Math.min(100, isNaN(attendanceVal) ? student.attendance : attendanceVal));
+      const hafazanVal = Number(document.getElementById("hafazan-input").value);
+      student.hafazan = Math.max(0, Math.min(hafazan.total, isNaN(hafazanVal) ? student.hafazan : hafazanVal));
+      persist();
+      renderStudentTable();
+      closeModal();
+      showToast("Rekod pelajar dikemaskini.");
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  // ================================================================
+  // YURAN — the tab button, panel, and all its contents are created
+  // and inserted only when FEATURES.finance is true. When false,
+  // nothing Yuran-related is added to the DOM at all (not created,
+  // not hidden — simply never built).
+  // ================================================================
+  function ensureYuranScaffold() {
+    if (!FEATURES.finance) return null;
+    let panel = document.getElementById("panel-yuran");
+    if (panel) return panel;
+
+    const tabBtn = document.createElement("button");
+    tabBtn.className = "portal-tabs__btn";
+    tabBtn.type = "button";
+    tabBtn.dataset.tab = "yuran";
+    tabBtn.id = "tab-btn-yuran";
+    tabBtn.textContent = "Yuran";
+    const tetapanBtn = tabsNav.querySelector('[data-tab="tetapan"]');
+    tabsNav.insertBefore(tabBtn, tetapanBtn);
+
+    panel = document.createElement("section");
+    panel.className = "portal-panel";
+    panel.dataset.panel = "yuran";
+    panel.id = "panel-yuran";
+    panel.hidden = true;
+    panel.innerHTML = '<div id="yuran-mount"></div>';
+    document.querySelector(".portal-main").appendChild(panel);
+
+    return panel;
+  }
+
+  function renderYuranPanel() {
+    if (!FEATURES.finance) return; // nothing to build, nothing to tear down
+    ensureYuranScaffold();
+    const mount = document.getElementById("yuran-mount");
+
+    mount.innerHTML = `
+      <div class="panel-head">
+        <h1>Yuran</h1>
+        <button class="btn btn--small" id="btn-bulk-charge" type="button">Cajkan yuran bulanan untuk semua pelajar</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Nama</th><th>Kelas</th><th>Baki</th><th></th></tr>
+          </thead>
+          <tbody id="yuran-table-body"></tbody>
+        </table>
+      </div>
+    `;
+
+    const body = document.getElementById("yuran-table-body");
+    body.innerHTML = "";
+    state.students
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .forEach((student) => {
+        const balance = getStudentBalance(student);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(student.name)}</td>
+          <td>${escapeHtml(student.className)}</td>
+          <td><span class="pill ${balance > 0 ? "pill--owing" : "pill--clear"}">${formatMoney(balance)}</span></td>
+          <td><button class="btn btn--secondary btn--small" data-ledger-student="${student.id}" type="button">Lihat Ledger</button></td>
+        `;
+        body.appendChild(tr);
+      });
+
+    body.querySelectorAll("[data-ledger-student]").forEach((btn) => {
+      btn.addEventListener("click", () => openLedgerModal(btn.dataset.ledgerStudent));
+    });
+
+    document.getElementById("btn-bulk-charge").addEventListener("click", openBulkChargeModal);
+  }
+
+  function openLedgerModal(studentId) {
+    const student = getStudent(state, studentId);
+    if (!student) return;
+
+    function ledgerRows() {
+      if (!student.fees.ledger.length) return '<p class="empty-note">Tiada rekod yuran lagi.</p>';
+      return `
+        <table class="data-table">
+          <thead><tr><th>Tarikh</th><th>Perkara</th><th>Jumlah</th></tr></thead>
+          <tbody>
+            ${student.fees.ledger.slice().sort((a, b) => a.date.localeCompare(b.date)).map((entry) => `
+              <tr>
+                <td>${formatDate(entry.date)}</td>
+                <td>${escapeHtml(entry.description)}</td>
+                <td>${entry.type === "charge" ? "+" : "-"}${formatMoney(entry.amount)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>`;
+    }
+
+    openModal(`
+      <div class="modal__head">
+        <h2>Yuran — ${escapeHtml(student.name)}</h2>
+        <button class="modal__close" type="button" data-close>&times;</button>
+      </div>
+      <p class="card__hint">Baki semasa: <strong>${formatMoney(getStudentBalance(student))}</strong></p>
+      <div class="table-wrap" style="margin-bottom:1rem;">${ledgerRows()}</div>
+      <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Tambah Rekod</h3>
+      <div class="field">
+        <label for="entry-type-select">Jenis</label>
+        <select id="entry-type-select">
+          <option value="charge">Caj (yuran dikenakan)</option>
+          <option value="payment">Bayaran diterima</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="entry-desc-input">Perkara</label>
+        <input type="text" id="entry-desc-input" placeholder="Cth: Yuran Bulanan Ogos 2026">
+      </div>
+      <div class="field">
+        <label for="entry-amount-input">Jumlah (RM)</label>
+        <input type="number" min="0" step="0.01" id="entry-amount-input">
+      </div>
+      <div class="modal__actions">
+        <button class="btn btn--ghost btn--small" type="button" data-close style="color:var(--ink); border-color: rgba(43,35,24,0.2);">Batal</button>
+        <button class="btn btn--small" type="button" id="btn-add-entry">Tambah</button>
+      </div>
+    `);
+
+    modalRoot.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeModal));
+    document.getElementById("btn-add-entry").addEventListener("click", () => {
+      const type = document.getElementById("entry-type-select").value;
+      const description = document.getElementById("entry-desc-input").value.trim();
+      const amount = Number(document.getElementById("entry-amount-input").value);
+      if (!description || !amount || amount <= 0) {
+        alert("Sila isi perkara dan jumlah yang sah.");
+        return;
+      }
+      student.fees.ledger.push({ id: uid("f"), date: todayIso(), description, amount, type });
+      persist();
+      renderYuranPanel();
+      closeModal();
+      showToast("Rekod yuran ditambah.");
+    });
+  }
+
+  function openBulkChargeModal() {
+    const classes = getClassList(state);
+    openModal(`
+      <div class="modal__head">
+        <h2>Cajkan Yuran Bulanan</h2>
+        <button class="modal__close" type="button" data-close>&times;</button>
+      </div>
+      <p class="card__hint">Satu caj akan ditambah kepada ledger yuran setiap pelajar yang dipilih di bawah.</p>
+      <div class="field">
+        <label for="bulk-desc-input">Perkara</label>
+        <input type="text" id="bulk-desc-input" value="Yuran Bulanan ${MALAY_MONTHS[new Date().getMonth()]} ${new Date().getFullYear()}">
+      </div>
+      <div class="field">
+        <label for="bulk-amount-input">Jumlah (RM)</label>
+        <input type="number" min="0" step="0.01" id="bulk-amount-input" value="50">
+      </div>
+      <div class="field">
+        <label for="bulk-class-select">Kelas</label>
+        <select id="bulk-class-select">
+          <option value="">Semua Kelas</option>
+          ${classes.map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("")}
+        </select>
+      </div>
+      <div class="modal__actions">
+        <button class="btn btn--ghost btn--small" type="button" data-close style="color:var(--ink); border-color: rgba(43,35,24,0.2);">Batal</button>
+        <button class="btn btn--small" type="button" id="btn-confirm-bulk">Cajkan</button>
+      </div>
+    `);
+
+    modalRoot.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeModal));
+    document.getElementById("btn-confirm-bulk").addEventListener("click", () => {
+      const description = document.getElementById("bulk-desc-input").value.trim();
+      const amount = Number(document.getElementById("bulk-amount-input").value);
+      const className = document.getElementById("bulk-class-select").value;
+      if (!description || !amount || amount <= 0) {
+        alert("Sila isi perkara dan jumlah yang sah.");
+        return;
+      }
+      const targets = state.students.filter((s) => !className || s.className === className);
+      if (!targets.length) {
+        alert("Tiada pelajar sepadan dengan kelas yang dipilih.");
+        return;
+      }
+      const ok = confirm(`Cajkan "${description}" (${formatMoney(amount)}) kepada ${targets.length} pelajar${className ? " dalam " + className : ""}?`);
+      if (!ok) return;
+      const today = todayIso();
+      targets.forEach((s) => {
+        s.fees.ledger.push({ id: uid("f"), date: today, description, amount, type: "charge" });
+      });
+      persist();
+      renderYuranPanel();
+      closeModal();
+      showToast(`Yuran dicajkan kepada ${targets.length} pelajar.`);
+    });
+  }
+
+  function todayIso() {
+    // Static "today" for this demo build rather than a live clock —
+    // keeps seed data and freshly-added ledger entries in the same
+    // timeframe. Swap for `new Date().toISOString().slice(0,10)` if
+    // this ever needs to track the real clock.
+    return "2026-08-01";
+  }
+
+  // ================================================================
+  // TETAPAN — subjects, hafazan config, admin contact number
+  // ================================================================
+  function renderSettings() {
+    renderSubjectChips();
+    document.getElementById("hafazan-unit-select").value = state.settings.hafazan.unit;
+    document.getElementById("hafazan-total-input").value = state.settings.hafazan.total;
+    renderContactCard();
+  }
+
+  // Built and inserted only when FEATURES.finance is true — this
+  // number only ever feeds the Yuran contact link, so it has no
+  // reason to exist in the DOM when that module is switched off.
+  function renderContactCard() {
+    let card = document.getElementById("settings-contact-card");
+    if (!FEATURES.finance) {
+      if (card) card.remove();
+      return;
+    }
+    if (!card) {
+      card = document.createElement("div");
+      card.className = "card";
+      card.id = "settings-contact-card";
+      card.innerHTML = `
+        <h2>Nombor WhatsApp Admin</h2>
+        <p class="card__hint">Nombor ini digunakan pada butang "Hubungi admin" di paparan ibu bapa untuk pertanyaan baki yuran — berasingan daripada nombor telefon peribadi setiap ibu bapa.</p>
+        <div class="inline-form">
+          <div class="field">
+            <label for="admin-contact-input">Nombor (digit sahaja, kod negara dahulu)</label>
+            <input type="tel" id="admin-contact-input" placeholder="60123456789">
+          </div>
+          <button class="btn btn--secondary btn--small" id="btn-save-contact" type="button">Simpan</button>
+        </div>
+      `;
+      document.getElementById("settings-hafazan-card").after(card);
+      document.getElementById("btn-save-contact").addEventListener("click", () => {
+        const val = document.getElementById("admin-contact-input").value.trim();
+        if (!/^\d{8,15}$/.test(val)) {
+          alert("Sila masukkan nombor yang sah (digit sahaja, kod negara dahulu, cth 60123456789).");
+          return;
+        }
+        state.settings.adminContactNumber = val;
+        persist();
+        showToast("Nombor WhatsApp admin disimpan.");
+      });
+    }
+    document.getElementById("admin-contact-input").value = state.settings.adminContactNumber;
+  }
+
+  function renderSubjectChips() {
+    const list = document.getElementById("subject-chip-list");
+    list.innerHTML = "";
+    if (!state.settings.subjects.length) {
+      list.innerHTML = '<p class="empty-note">Tiada subjek disenaraikan.</p>';
+      return;
+    }
+    state.settings.subjects.forEach((subj) => {
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.innerHTML = `${escapeHtml(subj)} <button type="button" data-remove-subject="${escapeHtml(subj)}" aria-label="Buang ${escapeHtml(subj)}">&times;</button>`;
+      list.appendChild(chip);
+    });
+    list.querySelectorAll("[data-remove-subject]").forEach((btn) => {
+      btn.addEventListener("click", () => removeSubject(btn.dataset.removeSubject));
+    });
+  }
+
+  document.getElementById("btn-add-subject").addEventListener("click", () => {
+    const input = document.getElementById("new-subject-input");
+    const name = input.value.trim();
+    if (!name) return;
+    if (state.settings.subjects.some((s) => s.toLowerCase() === name.toLowerCase())) {
+      alert("Subjek ini sudah ada dalam senarai.");
+      return;
+    }
+    state.settings.subjects.push(name);
+    persist();
+    input.value = "";
+    renderSubjectChips();
+    renderStudentTable();
+    showToast(`Subjek "${name}" ditambah.`);
+  });
+
+  function removeSubject(name) {
+    const affected = countStudentsWithMarkFor(state, name);
+    let proceed = true;
+    if (affected > 0) {
+      proceed = confirm(
+        `${affected} pelajar sudah mempunyai markah direkodkan untuk "${name}". ` +
+        `Membuang subjek ini akan menyembunyikannya daripada senarai aktif dan borang markah baharu — ` +
+        `markah sedia ada pelajar TIDAK akan dipadam. Teruskan?`
+      );
+    } else {
+      proceed = confirm(`Buang subjek "${name}" daripada senarai?`);
+    }
+    if (!proceed) return;
+    state.settings.subjects = state.settings.subjects.filter((s) => s !== name);
+    // Note: we deliberately do NOT touch student.marks[name] here — a
+    // student's historical mark under a removed subject is preserved,
+    // just no longer shown in the active marks-entry form.
+    persist();
+    renderSubjectChips();
+    renderStudentTable();
+    showToast(`Subjek "${name}" dibuang daripada senarai aktif.`);
+  }
+
+  document.getElementById("btn-save-hafazan").addEventListener("click", () => {
+    const unit = document.getElementById("hafazan-unit-select").value;
+    const total = Number(document.getElementById("hafazan-total-input").value);
+    if (!total || total < 1) {
+      alert("Sila masukkan jumlah sasaran yang sah.");
+      return;
+    }
+    state.settings.hafazan = { unit, total: Math.round(total) };
+    // Clamp existing student progress so nobody ends up above the new target.
+    state.students.forEach((s) => { s.hafazan = Math.min(s.hafazan, state.settings.hafazan.total); });
+    persist();
+    renderStudentTable();
+    showToast("Tetapan hafazan disimpan.");
+  });
+
+  // ── Initial render ──────────────────────────────────────────────
+  renderStudentTable();
+  renderYuranPanel();
+  renderSettings();
+})();
+</script>
+</body>
+</html>
