@@ -1,0 +1,237 @@
+/* ================================================================
+   index.css — styles for index.html ONLY.
+   Deliberately separate from styles.css/app.css: those are shared
+   with the login/admin/parent portal pages, and this page's classes
+   (.hero, .page, .ledger, .spread, etc.) don't exist there.
+
+   DESIGN PLAN (kept as comments so this survives hand-off intact)
+
+   Signature idea: the page is a physical, opened kitab, not a
+   scrolling stack of marketing sections. The hero photo is the
+   frontispiece with a pasted label, not empty decorative parchment.
+   "Bab Pertama / Bab Kedua" is a literal two-page spread with a
+   center spine — the two subjects sit physically side by side, the
+   way they sit side by side in the real daily schedule. The parent
+   preview is a loose ledger page tucked at an angle into the book,
+   not a floating SaaS dashboard card. Contact closes the book as a
+   colophon, the traditional place a manuscript records who made it
+   and where to find them.
+
+   Palette (unchanged from the existing brand, used more decisively):
+   teal #1B6B62, indigo #2A2F5C, malachite #3D7A5C, gold #B8934A,
+   parchment #F6F0E4, ink #2B2318. Overridable per madrasah via the
+   CSS custom properties below — see SITE_CONFIG.colors in
+   site-config.js, which sets these at runtime.
+   Type: Fraunces (display), Amiri (Arabic + numeral accents),
+   Public Sans (body/UI).
+================================================================= */
+:root{
+  --teal:#1B6B62; --indigo:#2A2F5C; --malachite:#3D7A5C; --malachite-ink:#376E53;
+  --gold:#B8934A; --gold-ink:#816734; --gold-soft:#CBAE73;
+  --parchment:#F6F0E4; --parchment-dim:#EEE4CE; --parchment-deep:#E7DABF;
+  --ink:#2B2318; --ink-soft:#6B6152; --on-indigo:#EFE9D8;
+  --font-display:"Fraunces","Georgia",serif;
+  --font-arabic:"Amiri",serif;
+  /* More ornamental calligraphic face, reserved for the short crest
+     inscriptions (hero + footer) — Amiri stays on the longer hadith
+     quote in the marginalia, where diacritic legibility matters more
+     than decorative flourish. */
+  --font-arabic-display:"Aref Ruqaa","Amiri",serif;
+  --font-body:"Public Sans","Segoe UI",sans-serif;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--parchment);color:var(--ink);font-family:var(--font-body);line-height:1.6;}
+img{display:block;max-width:100%;}
+.container{max-width:1180px;margin:0 auto;padding:0 1.5rem;}
+@media (min-width:900px){.container{padding:0 3rem;}}
+.eyebrow{display:inline-block;font-family:var(--font-body);font-weight:700;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--malachite-ink);margin-bottom:.6rem;}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto;} *{animation-duration:.001ms !important;transition-duration:.001ms !important;}}
+a:focus-visible, button:focus-visible{outline:3px solid var(--teal); outline-offset:3px;}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+
+/* ---------- mini header ---------- */
+.mini-header{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;justify-content:space-between;
+  padding:.7rem 1.2rem;background:rgba(246,240,228,.88);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(43,35,24,.08); transform:translateY(-100%); transition:transform .35s ease;}
+.mini-header.is-visible{transform:translateY(0);}
+.mini-header__brand{display:flex;align-items:center;gap:.5rem;text-decoration:none;color:var(--ink);font-family:var(--font-display);font-weight:600;}
+.mini-header__brand img{width:30px;height:30px;border-radius:50%;object-fit:cover;transform:scale(1.3);}
+.mini-header__cta{background:var(--teal);color:#fff;padding:.5rem 1rem;border-radius:99px;text-decoration:none;font-size:.85rem;font-weight:700;}
+
+/* =================================================================
+   HERO — frontispiece: full-bleed photo, asymmetric pasted label
+================================================================= */
+.hero{position:relative;min-height:88vh;display:flex;align-items:flex-end;overflow:hidden;}
+.hero__photo{position:absolute;inset:0;}
+.hero__photo img{width:100%;height:100%;object-fit:cover;}
+.hero__photo::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(0deg, rgba(27,20,10,.72) 0%, rgba(27,20,10,.28) 40%, rgba(27,20,10,.05) 62%, transparent 78%);}
+.hero__label{position:relative;z-index:2;margin:0 1.25rem 2.4rem;padding:1.9rem 1.7rem 1.6rem;
+  background:var(--parchment);
+  box-shadow:0 22px 40px -18px rgba(20,14,6,.55), 0 2px 0 rgba(184,147,74,.5) inset;
+  transform:rotate(-1.1deg); max-width:26rem;}
+@media (min-width:640px){.hero__label{margin:0 0 3.2rem 3.2rem;}}
+@media (min-width:900px){.hero__label{margin:0 0 4.4rem 5.5rem;padding:2.4rem 2.4rem 2rem;max-width:33rem;}}
+.hero__label::before{content:"";position:absolute;inset:0;pointer-events:none;
+  border:1px solid rgba(184,147,74,.55); margin:8px;}
+.hero__mark{display:block;width:56px;height:56px;border-radius:50%;overflow:hidden;margin-bottom:.9rem;
+  box-shadow:0 0 0 2px var(--parchment), 0 0 0 3px var(--gold-soft);}
+.hero__mark img{width:100%;height:100%;object-fit:cover;transform:scale(1.3);}
+.hero__arabic{font-family:var(--font-arabic-display);font-weight:700;color:var(--malachite-ink);font-size:1.3rem;margin:0 0 .3rem;}
+.hero__name{font-family:var(--font-display);font-weight:600;font-size:clamp(1.9rem,4.6vw,2.9rem);line-height:1.05;margin:0 0 .5rem;color:var(--ink);}
+.hero__mission{margin:0 0 .9rem;color:var(--ink-soft);font-size:.98rem;max-width:24ch;}
+.hero__tag{display:inline-flex;align-items:center;gap:.4rem;font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--malachite-ink);}
+.hero__tag .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);}
+.hero__scroll{position:absolute;right:1.5rem;bottom:1.5rem;z-index:2;writing-mode:vertical-rl;color:var(--on-indigo);
+  font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;display:none;align-items:center;gap:.5rem;opacity:.85;}
+.hero__scroll::after{content:"";width:1px;height:34px;background:var(--on-indigo);opacity:.7;}
+@media (min-width:900px){.hero__scroll{display:inline-flex;}}
+
+/* torn parchment strip stitching hero into the page below */
+.torn{position:relative;height:18px;background:var(--parchment);margin-top:-1px;}
+.torn::before{content:"";position:absolute;inset:0;
+  background:
+    linear-gradient(135deg, var(--parchment) 50%, transparent 50%) 0 0/18px 18px repeat-x,
+    linear-gradient(-135deg, var(--parchment) 50%, transparent 50%) 9px 0/18px 18px repeat-x;
+  background-color:transparent;
+  filter:drop-shadow(0 -3px 4px rgba(27,20,10,.18));
+}
+
+/* =================================================================
+   ABOUT — manuscript margin layout (kept close to original: this
+   part already avoided template defaults, only lightly retouched)
+================================================================= */
+.about{padding:4.5rem 0 3rem;}
+.about__grid{display:grid;gap:2.4rem;}
+@media (min-width:820px){.about__grid{grid-template-columns:1.5fr 1fr;gap:3.5rem;align-items:start;}}
+.about__main p{font-size:1.05rem;color:var(--ink);max-width:56ch;}
+.about__main strong{color:var(--malachite-ink);}
+.marginalia{border-left:2px solid var(--gold-soft);padding-left:1.4rem;}
+.marginalia__ar{font-family:var(--font-arabic);color:var(--malachite-ink);font-size:1.3rem;margin:0 0 .6rem;}
+.marginalia__ms{font-style:italic;color:var(--ink-soft);margin:0 0 .4rem;}
+.marginalia__cite{font-size:.82rem;color:var(--gold-ink);text-transform:uppercase;letter-spacing:.06em;margin:0;}
+
+.chain-rule{border:0;height:13px;margin:0 auto;max-width:1180px;
+  background-image:url("assets/tazhib-tile.svg");background-size:26px 26px;
+  background-repeat:repeat-x;background-position:center;opacity:.85;}
+
+/* =================================================================
+   PROGRAM — the two-page spread. This is the signature structural
+   move: on desktop, a literal open book with a spine down the
+   middle; each "page" carries a full-bleed class photo that tears
+   into the paper below it, rather than a feature card with an icon.
+================================================================= */
+.programs-intro{max-width:640px;margin:0 auto;padding:3.6rem 1.5rem 2.6rem;text-align:center;}
+.programs-intro h2{font-family:var(--font-display);font-weight:600;font-size:clamp(1.6rem,3.4vw,2.3rem);margin:.2rem 0 .8rem;}
+.programs-intro p{color:var(--ink-soft);margin:0;}
+
+.spread{position:relative;max-width:1180px;margin:0 auto 4rem;padding:0 1.2rem;
+  display:grid;gap:2.6rem;}
+@media (min-width:900px){
+  .spread{grid-template-columns:1fr 1fr;gap:0;padding:0 2.4rem;
+    background:linear-gradient(90deg, transparent calc(50% - 1px), rgba(184,147,74,.55) calc(50% - 1px), rgba(184,147,74,.55) calc(50% + 1px), transparent calc(50% + 1px));}
+  .spread::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:64px;margin-left:-32px;
+    background:linear-gradient(90deg, rgba(27,20,10,.14), transparent 40%, transparent 60%, rgba(27,20,10,.14));
+    pointer-events:none;}
+}
+.page{position:relative;background:var(--parchment-dim);
+  box-shadow:0 18px 34px -20px rgba(27,20,10,.35);}
+@media (min-width:900px){
+  .page--left{padding-right:2.2rem;box-shadow:none;}
+  .page--right{padding-left:2.2rem;box-shadow:none;}
+}
+.page__photo{position:relative;aspect-ratio:4/3;overflow:hidden;}
+.page__photo img{width:100%;height:100%;object-fit:cover;}
+.page__numeral{position:absolute;top:.6rem;font-family:var(--font-arabic);font-size:3.4rem;line-height:1;
+  color:var(--parchment);text-shadow:0 2px 10px rgba(0,0,0,.45);opacity:.92;}
+.page--left .page__numeral{left:.9rem;}
+.page--right .page__numeral{right:.9rem;}
+.page__photo-torn{position:relative;height:16px;margin-top:-1px;}
+.page__photo-torn::before{content:"";position:absolute;inset:0;
+  background:linear-gradient(135deg, var(--parchment-dim) 50%, transparent 50%) 0 0/16px 16px repeat-x,
+             linear-gradient(-135deg, var(--parchment-dim) 50%, transparent 50%) 8px 0/16px 16px repeat-x;}
+.page__body{padding:1.7rem 1.5rem 2.4rem;}
+@media (min-width:900px){.page__body{padding:2rem .2rem 2.4rem;}}
+.page__label{font-family:var(--font-body);font-weight:700;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-ink);margin:0 0 .3rem;}
+.page__title{font-family:var(--font-display);font-weight:600;font-size:1.7rem;margin:0 0 .7rem;color:var(--ink);}
+.page__intro{color:var(--ink-soft);margin:0 0 1.3rem;max-width:42ch;}
+.rhythm{list-style:none;margin:0;padding:0;border-top:1px solid var(--parchment-deep);}
+.rhythm li{display:flex;gap:1rem;padding:.55rem 0;border-bottom:1px solid var(--parchment-deep);font-size:.92rem;}
+.rhythm .time{flex:0 0 6.2rem;font-weight:700;color:var(--malachite-ink);font-family:var(--font-display);font-style:italic;}
+.index-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:.15rem 1.2rem;border-top:1px solid var(--parchment-deep);padding-top:.7rem;text-align:center;}
+.index-list li{display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.4rem 0;font-size:.92rem;}
+.index-list li::before{content:"";width:5px;height:5px;background:var(--gold);border-radius:50%;flex-shrink:0;}
+
+/* =================================================================
+   MAXILMU — a ledger page tucked into the book at an angle, not a
+   floating SaaS dashboard preview card.
+================================================================= */
+.maxilmu{position:relative;background:var(--indigo);padding:4.5rem 0 5.5rem;overflow:hidden;}
+.maxilmu::before{content:"";position:absolute;inset:0;opacity:.06;
+  background-image:url("assets/tazhib-tile.svg");background-size:90px 90px;}
+.maxilmu__head{position:relative;max-width:640px;margin:0 auto;padding:0 1.5rem 2.8rem;text-align:center;color:var(--on-indigo);}
+.maxilmu__head .eyebrow{color:var(--gold-soft);}
+.maxilmu__head h2{font-family:var(--font-display);font-weight:600;font-size:clamp(1.6rem,3.4vw,2.3rem);margin:.2rem 0 .9rem;}
+.maxilmu__head p{color:#C9C6D9;margin:0;}
+
+.ledger-wrap{position:relative;max-width:760px;margin:0 auto;padding:0 1.2rem;}
+.ledger{position:relative;background:var(--parchment);transform:rotate(1.1deg);
+  box-shadow:0 30px 50px -22px rgba(0,0,0,.55);padding:2.1rem 1.5rem 1.8rem;}
+@media (min-width:640px){.ledger{padding:2.6rem 2.6rem 2.2rem;}}
+.ledger::before{content:"";position:absolute;left:0;right:0;top:0;height:12px;
+  background-image:radial-gradient(circle, var(--indigo) 2.2px, transparent 2.6px);
+  background-size:14px 14px;background-position:6px 0;}
+.ledger__head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:.4rem;
+  border-bottom:2px solid var(--ink);padding-bottom:.7rem;margin-bottom:1.2rem;}
+.ledger__head h3{font-family:var(--font-display);font-weight:600;font-size:1.25rem;margin:0;}
+.ledger__head span{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);}
+
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem;margin-bottom:1.6rem;
+  background-image:repeating-linear-gradient(var(--parchment-deep) 0 1px, transparent 1px 2.4rem);}
+.stat-tile{padding:.2rem 0;}
+.stat-tile__label{display:block;font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:.15rem;}
+.stat-tile__value{font-family:var(--font-display);font-weight:700;font-size:clamp(1.5rem,4vw,2rem);color:var(--teal);line-height:1.05;}
+.stat-tile__sub{margin:.1rem 0 0;font-size:.72rem;color:var(--ink-soft);}
+
+.ledger h4{font-family:var(--font-body);font-weight:700;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-ink);margin:1.3rem 0 .5rem;}
+.report__exams{display:flex;gap:1.4rem;flex-wrap:wrap;margin-bottom:.4rem;}
+.report__exam{display:flex;flex-direction:column;}
+.report__exam-label{font-size:.7rem;color:var(--ink-soft);}
+.report__exam-value{font-family:var(--font-display);font-weight:700;font-size:1.2rem;}
+.chart-target-line{stroke:var(--gold);stroke-width:1;stroke-dasharray:4 3;}
+.chart-target-label{font-size:9px;fill:var(--gold-ink);font-family:var(--font-body);}
+.chart-line{fill:none;stroke:var(--teal);stroke-width:2.4;}
+.chart-dot{fill:var(--parchment);stroke:var(--teal);stroke-width:2;}
+.chart-axis-label{font-size:9px;fill:var(--ink-soft);font-family:var(--font-body);}
+.report__caption{font-size:.78rem;color:var(--ink-soft);margin:.3rem 0 0;}
+.ledger__stamp{position:absolute;bottom:-14px;right:18px;width:64px;height:64px;opacity:.85;transform:rotate(-8deg);}
+@media (min-width:640px){.ledger__stamp{width:78px;height:78px;right:32px;bottom:-18px;}}
+
+/* =================================================================
+   CONTACT — the colophon: where a manuscript records who made it.
+================================================================= */
+.contact{padding:4.5rem 0 3.5rem;}
+.contact__head{max-width:640px;margin:0 auto;text-align:center;padding:0 1.5rem 2.6rem;}
+.contact__head h2{font-family:var(--font-display);font-weight:600;font-size:clamp(1.6rem,3.4vw,2.3rem);margin:.2rem 0 .8rem;}
+.contact__head p{color:var(--ink-soft);margin:0;}
+.contact__grid{display:grid;gap:2.4rem;}
+@media (min-width:900px){.contact__grid{grid-template-columns:1fr 1.15fr;gap:3.5rem;}}
+.contact__block h3{font-family:var(--font-display);font-weight:600;font-size:1.05rem;margin:0 0 .4rem;}
+address{font-style:normal;color:var(--ink-soft);margin:0 0 .6rem;line-height:1.5;}
+.contact__directions{color:var(--malachite-ink);font-weight:700;text-decoration:none;font-size:.9rem;}
+.contact__map{width:100%;height:190px;border:0;margin:1.1rem 0;filter:sepia(.25) saturate(.8);}
+.btn{display:inline-block;background:var(--teal);color:#fff;padding:.75rem 1.5rem;border-radius:3px;
+  text-decoration:none;font-weight:700;font-size:.92rem;border:0;cursor:pointer;letter-spacing:.01em;}
+.btn:hover{background:var(--malachite-ink);}
+.form{display:flex;flex-direction:column;gap:1rem;background:var(--parchment-dim);padding:1.6rem;border:1px solid var(--parchment-deep);}
+.form label{display:flex;flex-direction:column;gap:.35rem;font-size:.85rem;font-weight:700;color:var(--ink);}
+.form input, .form textarea{font:inherit;padding:.6rem .7rem;border:1px solid var(--parchment-deep);background:var(--parchment);color:var(--ink);}
+.form__note{font-size:.75rem;color:var(--ink-soft);margin:.2rem 0 0;}
+
+.footer{background:var(--ink);color:var(--on-indigo);text-align:center;padding:2.6rem 1.5rem 2rem;font-size:.85rem;}
+.footer__mark{display:block;width:48px;height:48px;border-radius:50%;overflow:hidden;margin:0 auto .8rem;}
+.footer__mark img{width:100%;height:100%;object-fit:cover;transform:scale(1.3);}
+.footer p{margin:.15rem 0;color:#B9B6C9;}
+.footer__ar{font-family:var(--font-arabic-display);font-weight:700;font-size:1.2rem;color:var(--gold-soft) !important;margin:0 0 .3rem;}
+.footer__credit{color:var(--gold-soft) !important;font-size:.75rem;letter-spacing:.03em;margin-top:.6rem !important;}

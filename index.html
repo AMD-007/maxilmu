@@ -4,88 +4,39 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Maahad Cahaya Ilmu — Tahfiz &amp; Akademik, Kuala Terengganu</title>
-<meta name="description" content="Maahad Cahaya Ilmu di Kuala Terengganu — pondok tahfiz yang menggabungkan hafazan Al-Quran dengan pendidikan akademik.">
-<meta name="theme-color" content="#1B6B62">
-<meta property="og:type" content="website">
-<meta property="og:locale" content="ms_MY">
-<meta property="og:site_name" content="Maahad Cahaya Ilmu">
-<meta property="og:title" content="Maahad Cahaya Ilmu — Tahfiz &amp; Akademik, Kuala Terengganu">
-<meta property="og:description" content="Pondok tahfiz di Kuala Terengganu yang menggabungkan hafazan Al-Quran dengan pendidikan akademik — dengan kemajuan anak dihantar terus ke telefon ibu bapa.">
-<meta property="og:image" content="logo.png">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Maahad Cahaya Ilmu — Tahfiz &amp; Akademik, Kuala Terengganu">
-<meta name="twitter:description" content="Pondok tahfiz di Kuala Terengganu yang menggabungkan hafazan Al-Quran dengan pendidikan akademik.">
-<meta name="twitter:image" content="logo.png">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Fraunces weight 600 (normal) is what every h1/h2/h3 renders in, including
-     the above-the-fold hero title — preloaded so it's fetched in parallel with
-     the Google Fonts stylesheet instead of being discovered only after that
-     stylesheet parses, which is what causes the heading's swap-in layout jump.
-     Pinned to today's Google Fonts CDN hash for /s/fraunces/v38/...; if Google
-     rotates the file this preload just becomes a no-op, not a break. -->
-<link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/fraunces/v38/6NU78FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0KxC9TeA.woff2" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Amiri:ital,wght@0,400;0,700;1,400&family=Public+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
-<!-- Shares the portal's stat-tile component (app/app.css) so the
-     preview card below is pixel-consistent with the real parent
-     portal, not a lookalike built twice. -->
-<link rel="stylesheet" href="app/app.css">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Amiri:ital,wght@0,400;0,700;1,400&family=Aref+Ruqaa:wght@400;700&family=Public+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="index.css">
+<script src="site-config.js"></script>
 </head>
 <body>
 
-<header class="mini-header">
-  <a href="#top" class="mini-header__brand">
-    <span class="mark-crop mini-header__mark"><img src="logo.png" alt=""></span>
-    <span>Maahad Cahaya Ilmu</span>
-  </a>
+<header class="mini-header" id="miniHeader">
+  <a href="#top" class="mini-header__brand"><img src="logo-transparent.png" data-config-logo alt=""><span data-config="name">Maahad Cahaya Ilmu</span></a>
   <a class="mini-header__cta" data-wa-link href="https://wa.me/" target="_blank" rel="noopener">WhatsApp</a>
 </header>
 
-<!-- ============================================================
-     HERO — parchment ground, hand-drawn tazhib cartouche
-     ============================================================ -->
+<!-- ============ HERO — frontispiece photo + pasted label ============ -->
 <section class="hero" id="top">
-  <div class="cartouche">
-    <span class="cartouche__edge cartouche__edge--top"></span>
-    <span class="cartouche__edge cartouche__edge--right"></span>
-    <span class="cartouche__edge cartouche__edge--bottom"></span>
-    <span class="cartouche__edge cartouche__edge--left"></span>
-
-    <span class="cartouche__corner cartouche__corner--tl" aria-hidden="true">
-      <svg viewBox="-12 -12 24 24"><path fill="#3D7A5C" stroke="#B8934A" stroke-width="1.3" stroke-linejoin="round" d="M0,-10.4 L2.6,-6.28 L7.35,-7.35 L6.28,-2.6 L10.4,0 L6.28,2.6 L7.35,7.35 L2.6,6.28 L0,10.4 L-2.6,6.28 L-7.35,7.35 L-6.28,2.6 L-10.4,0 L-6.28,-2.6 L-7.35,-7.35 L-2.6,-6.28 Z"/></svg>
-    </span>
-    <span class="cartouche__corner cartouche__corner--tr" aria-hidden="true">
-      <svg viewBox="-12 -12 24 24"><path fill="#3D7A5C" stroke="#B8934A" stroke-width="1.3" stroke-linejoin="round" d="M0,-10.4 L2.6,-6.28 L7.35,-7.35 L6.28,-2.6 L10.4,0 L6.28,2.6 L7.35,7.35 L2.6,6.28 L0,10.4 L-2.6,6.28 L-7.35,7.35 L-6.28,2.6 L-10.4,0 L-6.28,-2.6 L-7.35,-7.35 L-2.6,-6.28 Z"/></svg>
-    </span>
-    <span class="cartouche__corner cartouche__corner--bl" aria-hidden="true">
-      <svg viewBox="-12 -12 24 24"><path fill="#3D7A5C" stroke="#B8934A" stroke-width="1.3" stroke-linejoin="round" d="M0,-10.4 L2.6,-6.28 L7.35,-7.35 L6.28,-2.6 L10.4,0 L6.28,2.6 L7.35,7.35 L2.6,6.28 L0,10.4 L-2.6,6.28 L-7.35,7.35 L-6.28,2.6 L-10.4,0 L-6.28,-2.6 L-7.35,-7.35 L-2.6,-6.28 Z"/></svg>
-    </span>
-    <span class="cartouche__corner cartouche__corner--br" aria-hidden="true">
-      <svg viewBox="-12 -12 24 24"><path fill="#3D7A5C" stroke="#B8934A" stroke-width="1.3" stroke-linejoin="round" d="M0,-10.4 L2.6,-6.28 L7.35,-7.35 L6.28,-2.6 L10.4,0 L6.28,2.6 L7.35,7.35 L2.6,6.28 L0,10.4 L-2.6,6.28 L-7.35,7.35 L-6.28,2.6 L-10.4,0 L-6.28,-2.6 L-7.35,-7.35 L-2.6,-6.28 Z"/></svg>
-    </span>
-
-    <span class="mark-crop hero__mark"><img src="logo.png" alt="Lambang Maahad Cahaya Ilmu"></span>
-    <p class="hero__arabic" lang="ar" dir="rtl">معهد نور العلم</p>
-    <h1 class="hero__name">Maahad Cahaya Ilmu</h1>
-    <p class="hero__mission">Menghafaz Al-Quran, membina peribadi, menyediakan masa depan.</p>
-    <span class="hero__tag"><span class="dot"></span>Kuala Terengganu</span>
+  <div class="hero__photo"><img src="images/hero-exterior.jpg" alt="Anak-anak murid berjalan menuju bangunan pondok pada waktu pagi"></div>
+  <div class="hero__label">
+    <span class="hero__mark"><img src="logo-transparent.png" data-config-logo data-config-alt="name" alt="Lambang Maahad Cahaya Ilmu"></span>
+    <p class="hero__arabic" lang="ar" dir="rtl" data-config="nameArabic">معهد نور العلم</p>
+    <h1 class="hero__name" data-config="name">Maahad Cahaya Ilmu</h1>
+    <p class="hero__mission" data-config="tagline">Menghafaz Al-Quran, membina peribadi, menyediakan masa depan.</p>
+    <span class="hero__tag"><span class="dot"></span><span data-config="location">Kuala Terengganu</span></span>
   </div>
+  <span class="hero__scroll">Tatal ke bawah</span>
 </section>
+<div class="torn" aria-hidden="true"></div>
 
-<hr class="chain-rule">
-
-<!-- ============================================================
-     ABOUT — manuscript margin layout
-     ============================================================ -->
+<!-- ============ ABOUT ============ -->
 <section class="about" id="tentang">
   <div class="container about__grid">
     <div class="about__main">
       <h2 class="sr-only">Tentang Kami</h2>
-      <p>Di Maahad Cahaya Ilmu, setiap hari anak-anak kami berpindah antara dua dunia — mushaf di tangan waktu pagi, buku teks waktu tengah hari. Ini bukan dua jadual yang bertembung, tetapi satu ritma harian yang direka supaya kedua-duanya <strong>membesar bersama</strong>.</p>
+      <p>Di <span data-config="name">Maahad Cahaya Ilmu</span>, setiap hari anak-anak kami berpindah antara dua dunia — mushaf di tangan waktu pagi, buku teks waktu tengah hari. Ini bukan dua jadual yang bertembung, tetapi satu ritma harian yang direka supaya kedua-duanya <strong>membesar bersama</strong>.</p>
       <p>Anak-anak tinggal di pondok, dibimbing oleh asatizah yang mengenali mereka bukan sekadar sebagai pelajar — tetapi sebagai anak yang dipertanggungjawabkan kepada kami oleh ibu bapa mereka. Itu amanah yang kami pegang dengan serius, dan dengan kasih sayang.</p>
     </div>
     <aside class="marginalia">
@@ -96,23 +47,26 @@
   </div>
 </section>
 
-<!-- ============================================================
-     PROGRAMS — two chapters, one manuscript spread
-     ============================================================ -->
+<hr class="chain-rule">
+
+<!-- ============ PROGRAM — the two-page spread ============ -->
 <section id="program">
   <div class="programs-intro">
-    <span class="eyebrow">Program</span>
     <h2>Disusun seperti dua bab dalam satu kitab</h2>
-    <p>Hafazan dan akademik bukan dua perkara berasingan — ia dua bab yang dibaca bersama, setiap hari.</p>
+    <p>Hafazan dan akademik bukan dibaca bersama, setiap hari.</p>
   </div>
 
-  <div class="programs-frame">
-    <article class="chapter chapter--hafazan">
-      <span class="chapter__numeral" aria-hidden="true">١</span>
-      <div class="chapter__inner">
-        <p class="chapter__label">Bab Pertama</p>
-        <h3 class="chapter__title">Hafazan &amp; Tahfiz</h3>
-        <p class="chapter__intro">Setiap waktu solat membawa anak-anak kembali kepada Al-Quran, dalam kitaran tasmi' dan ziyadah yang konsisten sepanjang tahun — bukan sekali seminggu, tetapi setiap hari.</p>
+  <div class="spread">
+    <article class="page page--left">
+      <div class="page__photo">
+        <img src="images/hafazan-class.jpg" alt="Pelajar duduk bersila membaca mushaf semasa sesi tasmik hafazan">
+        <span class="page__numeral" aria-hidden="true">١</span>
+      </div>
+      <div class="page__photo-torn" aria-hidden="true"></div>
+      <div class="page__body">
+        <p class="page__label">Bab Pertama</p>
+        <h3 class="page__title">Hafazan &amp; Tahfiz</h3>
+        <p class="page__intro">Setiap waktu solat membawa anak-anak kembali kepada Al-Quran, dalam kitaran tasmi' dan ziyadah yang konsisten sepanjang tahun — bukan sekali seminggu, tetapi setiap hari.</p>
         <ul class="rhythm">
           <li><span class="time">Subuh</span><span class="what">Tasmi' — semakan hafazan lama</span></li>
           <li><span class="time">Pagi</span><span class="what">Ziyadah — hafazan ayat baharu</span></li>
@@ -123,13 +77,17 @@
       </div>
     </article>
 
-    <article class="chapter chapter--akademik">
-      <span class="chapter__numeral" aria-hidden="true">٢</span>
-      <div class="chapter__inner">
-        <p class="chapter__label">Bab Kedua</p>
-        <h3 class="chapter__title">Akademik</h3>
-        <p class="chapter__intro">Diselaraskan dengan kurikulum kebangsaan, disesuaikan dengan ritma pondok — supaya satu tidak mengorbankan yang lain.</p>
-        <ul class="index-list">
+    <article class="page page--right">
+      <div class="page__photo">
+        <img src="images/akademik-class.jpg" alt="Pelajar menulis di meja semasa kelas akademik, guru di hadapan papan putih">
+        <span class="page__numeral" aria-hidden="true">٢</span>
+      </div>
+      <div class="page__photo-torn" aria-hidden="true"></div>
+      <div class="page__body">
+        <p class="page__label">Bab Kedua</p>
+        <h3 class="page__title">Akademik</h3>
+        <p class="page__intro">Diselaraskan dengan kurikulum kebangsaan, disesuaikan dengan ritma pondok — supaya satu tidak mengorbankan yang lain.</p>
+        <ul class="index-list" id="subject-list">
           <li>Bahasa Melayu</li>
           <li>Bahasa Inggeris</li>
           <li>Bahasa Arab</li>
@@ -143,172 +101,92 @@
   </div>
 </section>
 
-<!-- ============================================================
-     MAXILMU — the juz' progress strip
-     ============================================================ -->
+<!-- ============ MAXILMU — the tucked-in ledger page ============ -->
 <section class="maxilmu" id="maxilmu">
   <div class="maxilmu__head">
-    <span class="eyebrow">Untuk Ibu Bapa — MaxIlmu</span>
     <h2>Anda tak perlu tunggu peperiksaan untuk tahu.</h2>
-    <p>Hafazan anak anda direkod setiap minggu, kehadiran setiap bulan — kedua-duanya dipaparkan sebagai graf kemajuan. Keputusan tiga peperiksaan tahunan — awal, pertengahan, akhir tahun — kelihatan dalam satu jadual mudah, terus ke telefon anda.</p>
+    <p>Hafazan anak anda direkod setiap minggu, kehadiran setiap bulan, kedua-duanya dipaparkan sebagai graf kemajuan, terus ke telefon anda.</p>
   </div>
 
-  <div class="report">
-    <div class="report__inner">
-      <div class="report__head">
+  <div class="ledger-wrap">
+    <div class="ledger">
+      <div class="ledger__head">
         <h3>Pratonton Portal Ibu Bapa</h3>
-        <span>ILUSTRASI PAPARAN · MINGGU 30, 2026</span>
+        <span>Ilustrasi · Minggu 30, 2026</span>
       </div>
 
       <div class="stat-grid" aria-hidden="true">
-        <div class="stat-tile">
-          <span class="stat-tile__label">Kehadiran</span>
-          <div class="stat-tile__value">96%</div>
-          <p class="stat-tile__sub">Julai 2026</p>
-        </div>
-        <div class="stat-tile">
-          <span class="stat-tile__label">Purata Terkini</span>
-          <div class="stat-tile__value">82%</div>
-          <p class="stat-tile__sub">Akhir Tahun</p>
-        </div>
-        <div class="stat-tile">
-          <span class="stat-tile__label">Kemajuan Hafazan</span>
-          <div class="stat-tile__value">40%</div>
-          <p class="stat-tile__sub">12 / 30 Juzuk</p>
-        </div>
+        <div class="stat-tile"><span class="stat-tile__label">Kehadiran</span><div class="stat-tile__value">96%</div><p class="stat-tile__sub">Julai 2026</p></div>
+        <div class="stat-tile"><span class="stat-tile__label">Purata Terkini</span><div class="stat-tile__value">82%</div><p class="stat-tile__sub">Akhir Tahun</p></div>
+        <div class="stat-tile"><span class="stat-tile__label">Hafazan</span><div class="stat-tile__value">40%</div><p class="stat-tile__sub">12 / 30 Juzuk</p></div>
       </div>
 
-      <h4 class="report__subhead">Keputusan Peperiksaan</h4>
+      <h4>Keputusan Peperiksaan</h4>
       <div class="report__exams" aria-hidden="true">
-        <div class="report__exam">
-          <span class="report__exam-label">Awal Tahun</span>
-          <span class="report__exam-value">63%</span>
-        </div>
-        <div class="report__exam">
-          <span class="report__exam-label">Pertengahan</span>
-          <span class="report__exam-value">70%</span>
-        </div>
-        <div class="report__exam">
-          <span class="report__exam-label">Akhir Tahun</span>
-          <span class="report__exam-value">82%</span>
-        </div>
+        <div class="report__exam"><span class="report__exam-label">Awal Tahun</span><span class="report__exam-value">63%</span></div>
+        <div class="report__exam"><span class="report__exam-label">Pertengahan</span><span class="report__exam-value">70%</span></div>
+        <div class="report__exam"><span class="report__exam-label">Akhir Tahun</span><span class="report__exam-value">82%</span></div>
       </div>
 
-      <h4 class="report__subhead">Kehadiran Bulanan</h4>
-      <div class="report__chart" aria-hidden="true">
-        <svg viewBox="0 0 600 200" role="img" aria-label="Graf kehadiran bulanan, contoh 96% berbanding sasaran 90%">
-          <defs>
-            <linearGradient id="reportAttendanceFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="var(--malachite)" stop-opacity="0.28"/>
-              <stop offset="100%" stop-color="var(--malachite)" stop-opacity="0"/>
-            </linearGradient>
-          </defs>
-          <line x1="30" y1="30" x2="586" y2="30" class="chart-target-line"/>
-          <text x="586" y="25" class="chart-target-label" text-anchor="end">Sasaran: 90%</text>
-          <path d="M30,23.6 L122.7,22 L215.3,25.2 L308,18.8 L400.7,20.4 L493.3,22 L586,20.4 L586,174 L30,174 Z" fill="url(#reportAttendanceFill)"/>
-          <path d="M30,23.6 L122.7,22 L215.3,25.2 L308,18.8 L400.7,20.4 L493.3,22 L586,20.4" class="chart-line"/>
-          <circle cx="30" cy="23.6" r="3.2" class="chart-dot"/>
-          <circle cx="122.7" cy="22" r="3.2" class="chart-dot"/>
-          <circle cx="215.3" cy="25.2" r="3.2" class="chart-dot"/>
-          <circle cx="308" cy="18.8" r="3.2" class="chart-dot"/>
-          <circle cx="400.7" cy="20.4" r="3.2" class="chart-dot"/>
-          <circle cx="493.3" cy="22" r="3.2" class="chart-dot"/>
-          <circle cx="586" cy="20.4" r="3.2" class="chart-dot"/>
-          <text x="30" y="194" class="chart-axis-label" text-anchor="middle">Jan</text>
-          <text x="215.3" y="194" class="chart-axis-label" text-anchor="middle">Mac</text>
-          <text x="400.7" y="194" class="chart-axis-label" text-anchor="middle">Mei</text>
-          <text x="586" y="194" class="chart-axis-label" text-anchor="middle">Jul</text>
-          <text x="30" y="18" class="chart-axis-label" text-anchor="start">100</text>
-          <text x="30" y="174" class="chart-axis-label" text-anchor="start">0</text>
-        </svg>
-      </div>
-      <p class="report__caption">Kehadiran direkod setiap bulan dan dibandingkan dengan sasaran madrasah. Contoh paparan, bukan rekod pelajar sebenar.</p>
-
-      <h4 class="report__subhead">Hafazan Mingguan</h4>
+      <h4>Hafazan Mingguan</h4>
       <div class="report__chart" aria-hidden="true">
         <svg viewBox="0 0 600 200" role="img" aria-label="Graf kemajuan hafazan mingguan, contoh 12 daripada 30 Juzuk">
-          <defs>
-            <linearGradient id="reportChartFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="var(--malachite)" stop-opacity="0.28"/>
-              <stop offset="100%" stop-color="var(--malachite)" stop-opacity="0"/>
-            </linearGradient>
-          </defs>
           <line x1="30" y1="24" x2="586" y2="24" class="chart-target-line"/>
           <text x="586" y="19" class="chart-target-label" text-anchor="end">Sasaran: 30 Juzuk</text>
-          <path d="M30,169 L122.7,159 L215.3,149 L308,141.5 L400.7,134 L493.3,124 L586,114 L586,174 L30,174 Z" fill="url(#reportChartFill)"/>
           <path d="M30,169 L122.7,159 L215.3,149 L308,141.5 L400.7,134 L493.3,124 L586,114" class="chart-line"/>
-          <circle cx="30" cy="169" r="3.2" class="chart-dot"/>
-          <circle cx="122.7" cy="159" r="3.2" class="chart-dot"/>
-          <circle cx="215.3" cy="149" r="3.2" class="chart-dot"/>
-          <circle cx="308" cy="141.5" r="3.2" class="chart-dot"/>
-          <circle cx="400.7" cy="134" r="3.2" class="chart-dot"/>
-          <circle cx="493.3" cy="124" r="3.2" class="chart-dot"/>
+          <circle cx="30" cy="169" r="3.2" class="chart-dot"/><circle cx="122.7" cy="159" r="3.2" class="chart-dot"/>
+          <circle cx="215.3" cy="149" r="3.2" class="chart-dot"/><circle cx="308" cy="141.5" r="3.2" class="chart-dot"/>
+          <circle cx="400.7" cy="134" r="3.2" class="chart-dot"/><circle cx="493.3" cy="124" r="3.2" class="chart-dot"/>
           <circle cx="586" cy="114" r="3.2" class="chart-dot"/>
           <text x="30" y="194" class="chart-axis-label" text-anchor="middle">Jan</text>
           <text x="215.3" y="194" class="chart-axis-label" text-anchor="middle">Mac</text>
           <text x="400.7" y="194" class="chart-axis-label" text-anchor="middle">Mei</text>
           <text x="586" y="194" class="chart-axis-label" text-anchor="middle">Jul</text>
-          <text x="30" y="18" class="chart-axis-label" text-anchor="start">32</text>
-          <text x="30" y="174" class="chart-axis-label" text-anchor="start">0</text>
         </svg>
       </div>
-      <p class="report__caption">12 daripada 30 juzuk — dikemas kini oleh guru tahfiz setiap minggu. Contoh paparan, bukan rekod pelajar sebenar.</p>
+      <p class="report__caption">12 daripada 30 juzuk — dikemas kini setiap minggu. Contoh paparan, bukan rekod pelajar sebenar.</p>
+
+      <svg class="ledger__stamp" viewBox="-15 -15 30 30" aria-hidden="true">
+        <circle r="13.5" fill="none" stroke="#816734" stroke-width="1"/>
+        <path fill="#3D7A5C" stroke="#B8934A" stroke-width="1" stroke-linejoin="round"
+          d="M0,-10.4 L2.6,-6.28 L7.35,-7.35 L6.28,-2.6 L10.4,0 L6.28,2.6 L7.35,7.35 L2.6,6.28 L0,10.4 L-2.6,6.28 L-7.35,7.35 L-6.28,2.6 L-10.4,0 L-6.28,-2.6 L-7.35,-7.35 L-2.6,-6.28 Z"/>
+      </svg>
     </div>
   </div>
 </section>
 
-<hr class="chain-rule">
-
-<!-- ============================================================
-     CONTACT — plain and quiet, function over decoration
-     ============================================================ -->
+<!-- ============ CONTACT — colophon ============ -->
 <section class="contact" id="hubungi">
-  <div class="container">
-    <div class="contact__head">
-      <span class="eyebrow">Hubungi Kami</span>
-      <h2>Mula dengan satu mesej.</h2>
-      <p>Ada soalan tentang pendaftaran, yuran, atau lawatan? Hubungi kami terus melalui WhatsApp, atau isi borang di bawah.</p>
+  <div class="contact__head">
+    <h2>Mula dengan satu mesej.</h2>
+    <p>Ada soalan tentang pendaftaran, yuran, atau lawatan? Hubungi kami terus melalui WhatsApp, atau isi borang di bawah.</p>
+  </div>
+  <div class="container contact__grid">
+    <div class="contact__block">
+      <h3>Alamat</h3>
+      <address id="contact-address">Maahad Cahaya Ilmu<br>Kuala Terengganu<br>Terengganu, Malaysia</address>
+      <a class="contact__directions" id="contact-map-link" href="https://www.google.com/maps?q=Kuala+Terengganu,+Terengganu" target="_blank" rel="noopener">Lihat di peta →</a>
+      <iframe class="contact__map" id="contact-map-frame" src="https://www.google.com/maps?q=Kuala+Terengganu,+Terengganu&z=12&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Peta kawasan Kuala Terengganu (ilustrasi, bukan lokasi sebenar)"></iframe>
+      <a class="btn" data-wa-link href="https://wa.me/" target="_blank" rel="noopener">Hubungi melalui WhatsApp</a>
     </div>
-    <div class="contact__grid">
-      <div class="contact__info">
-        <div class="contact__block">
-          <h3>Alamat</h3>
-          <address>Maahad Cahaya Ilmu<br>Kuala Terengganu<br>Terengganu, Malaysia</address>
-          <a class="contact__directions" href="https://www.google.com/maps?q=Kuala+Terengganu,+Terengganu" target="_blank" rel="noopener">Lihat di peta →</a>
-        </div>
-        <!-- Placeholder demo institution — city-level map only, not a
-             specific pinned address, since this location is fictional. -->
-        <iframe class="contact__map" src="https://www.google.com/maps?q=Kuala+Terengganu,+Terengganu&z=12&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Peta kawasan Kuala Terengganu (ilustrasi, bukan lokasi sebenar)"></iframe>
-        <a class="btn" data-wa-link href="https://wa.me/" target="_blank" rel="noopener">Hubungi melalui WhatsApp</a>
-      </div>
-      <form class="form" id="contact-form" novalidate>
-        <label for="field-name">Nama
-          <input type="text" id="field-name" name="name" required autocomplete="name" aria-describedby="error-name">
-          <span class="form__error" id="error-name" role="alert"></span>
-        </label>
-        <label for="field-phone">Nombor Telefon / WhatsApp
-          <input type="tel" id="field-phone" name="phone" required autocomplete="tel" aria-describedby="error-phone">
-          <span class="form__error" id="error-phone" role="alert"></span>
-        </label>
-        <label for="field-message">Mesej
-          <textarea id="field-message" name="message" rows="4" required placeholder="Contoh: Saya ingin tahu lebih lanjut tentang pendaftaran untuk sesi akan datang." aria-describedby="error-message"></textarea>
-          <span class="form__error" id="error-message" role="alert"></span>
-        </label>
-        <button class="btn" type="submit">Hantar melalui WhatsApp</button>
-        <p class="form__note">Borang ini akan membuka WhatsApp dengan mesej anda — tiada maklumat disimpan di laman ini.</p>
-      </form>
-    </div>
+    <form class="form" id="contact-form" novalidate>
+      <label>Nama<input type="text" name="name" required autocomplete="name"></label>
+      <label>Nombor Telefon / WhatsApp<input type="tel" name="phone" required autocomplete="tel"></label>
+      <label>Mesej<textarea name="message" rows="4" required placeholder="Contoh: Saya ingin tahu lebih lanjut tentang pendaftaran untuk sesi akan datang."></textarea></label>
+      <button class="btn" type="submit">Hantar melalui WhatsApp</button>
+      <p class="form__note">Borang ini akan membuka WhatsApp dengan mesej anda — tiada maklumat disimpan di laman ini.</p>
+    </form>
   </div>
 </section>
 
 <footer class="footer">
-  <span class="mark-crop footer__mark"><img src="logo.png" alt=""></span>
-  <p class="footer__ar" lang="ar" dir="rtl">معهد نور العلم</p>
-  <p>Maahad Cahaya Ilmu · Kuala Terengganu</p>
+  <span class="footer__mark"><img src="logo-transparent.png" data-config-logo alt=""></span>
+  <p class="footer__ar" lang="ar" dir="rtl" data-config="nameArabic">معهد نور العلم</p>
+  <p><span data-config="name">Maahad Cahaya Ilmu</span> &middot; <span data-config="location">Kuala Terengganu</span></p>
   <p>&copy; 2026. Hak cipta terpelihara.</p>
   <p class="footer__credit">Dikuasakan oleh MaxIlmu</p>
 </footer>
 
-<script src="script.js"></script>
+<script src="index.js"></script>
 </body>
 </html>
