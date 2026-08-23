@@ -105,27 +105,21 @@ h1, h2, h3 {
   border: 0;
 }
 
-/* Shared crest crop: isolates the crescent/dome/pillars/ribbons
-   emblem from the source logo (992x1080px). Measured pixel-by-pixel:
-   Arabic text and its decorative tails taper off by y~198, a clean
-   gap (0 non-background pixels) sits at y968-988, Latin text spans
-   y989-1025. Earlier crop math (y270-970) started AFTER the crescent
-   — it was excluded entirely and the dome's spire got clipped mid-
-   stroke, which read as artwork being cut off rather than isolated.
-   Cropping to y198-970 instead keeps crescent + star + dome + pillars
-   + ribbons together — the actual "emblem" — while still landing in
-   the clean gap above the Latin wordmark. */
+/* The logo is a full circular badge (gold ring border baked into the
+   artwork, transparent background) — shown whole and centered at
+   every size, never cropped, so the ring is never clipped. No
+   CSS-side background needed since the PNG itself has no white square
+   to hide behind the circle. */
 .mark-crop {
-  aspect-ratio: 992 / 772;
-  overflow: hidden;
+  aspect-ratio: 1 / 1;
   display: block;
-  background: var(--parchment);
+  background: transparent;
 }
 .mark-crop img {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
-  transform: translateY(-18.33%);
+  object-fit: contain;
 }
 
 /* ============================================================
@@ -156,7 +150,7 @@ h1, h2, h3 {
   color: var(--ink);
   text-decoration: none;
 }
-.mini-header__mark { width: 28px; border-radius: 7px; border: 1px solid var(--gold-soft); }
+.mini-header__mark { width: 28px; }
 .mini-header__cta {
   display: inline-flex;
   align-items: center;
@@ -177,7 +171,39 @@ h1, h2, h3 {
 .hero {
   padding: clamp(5rem, 4rem + 4vw, 7rem) var(--space-m) var(--space-l);
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-l);
+}
+
+/* Establishing shot of the physical place, framed the same way as
+   every other distinct panel on the page (.programs-frame, .report,
+   .error-card) so it reads as part of the manuscript, not a bolted-on
+   photo. */
+.hero__photo {
+  width: 100%;
+  max-width: 760px;
+  margin: 0;
+  border: 16px solid transparent;
+  border-image-source: var(--tazhib);
+  border-image-slice: 30 fill;
+  border-image-width: 16px;
+  border-image-repeat: round;
+  background: var(--parchment-dim);
+}
+.hero__photo img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1376 / 768;
+  object-fit: cover;
+  display: block;
+}
+.hero__photo figcaption {
+  padding: 0.6rem var(--space-s) 0.1rem;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--ink-soft);
+  text-align: center;
 }
 
 .cartouche {
@@ -238,8 +264,6 @@ h1, h2, h3 {
 
 .hero__mark {
   width: 76px;
-  border-radius: 14px;
-  border: 1.5px solid var(--gold-soft);
   opacity: 0;
   animation: rise 0.8s ease 2.05s forwards;
 }
@@ -420,6 +444,21 @@ h1, h2, h3 {
   max-width: 52ch;
 }
 
+.chapter__photo {
+  margin: 0 0 var(--space-m);
+  max-width: 52ch;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(184, 147, 74, 0.4);
+}
+.chapter__photo img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1200 / 896;
+  object-fit: cover;
+  display: block;
+}
+
 .chapter--hafazan {
   background: var(--indigo);
   color: var(--on-indigo);
@@ -496,12 +535,35 @@ h1, h2, h3 {
 /* ============================================================
    MaxIlmu — mini preview of the parent portal
    ============================================================ */
-.maxilmu { padding: var(--space-xl) 0; }
+/* Tinted, bordered "product panel" — visually separates the MaxIlmu
+   system pitch from the madrasah's own content on either side. */
+.maxilmu {
+  padding: var(--space-xl) 0;
+  background: rgba(42, 47, 92, 0.055);
+  border-top: 1px solid rgba(42, 47, 92, 0.2);
+  border-bottom: 1px solid rgba(42, 47, 92, 0.2);
+}
 .maxilmu__head {
   max-width: 620px;
   margin: 0 auto var(--space-l);
   padding: 0 var(--space-m);
   text-align: center;
+}
+.maxilmu__tag {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0 auto var(--space-s);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--on-indigo);
+  background: var(--indigo);
+  padding: 0.35em 0.9em;
+  border-radius: 999px;
 }
 .maxilmu__head h2 { margin-top: 0.5rem; }
 .maxilmu__head p { color: var(--ink-soft); margin-top: var(--space-s); }
@@ -757,8 +819,6 @@ h1, h2, h3 {
 }
 .error-card__mark {
   width: 64px;
-  border-radius: 14px;
-  border: 1.5px solid var(--gold-soft);
   margin-bottom: 0.4rem;
 }
 .error-card__code {
@@ -786,7 +846,7 @@ h1, h2, h3 {
   padding: var(--space-l) 0 var(--space-m);
   text-align: center;
 }
-.footer__mark { width: 38px; border-radius: 9px; margin: 0 auto 0.8rem; border: 1px solid rgba(184,147,74,0.5); }
+.footer__mark { width: 38px; margin: 0 auto 0.8rem; }
 .footer p { margin: 0.2rem 0; font-size: 0.85rem; }
 .footer .footer__ar {
   font-family: var(--font-arabic);

@@ -22,15 +22,12 @@ const FEATURES = {
 const STORAGE_KEY = "maxilmu_demo_state_v3";
 const SESSION_KEY = "maxilmu_demo_session_v1";
 
-// ============================================================
-// REPLACE BEFORE DEMO: real WhatsApp number, digits only,
-// country code first (e.g. Malaysia: 601XXXXXXXX).
-// This is the number parents reach about their OWN fee balance —
-// deliberately separate from the general WhatsApp number in the
-// public site's script.js (WHATSAPP_NUMBER). See defaultState()
-// below, where this seeds settings.adminContactNumber.
-// ============================================================
-const ADMIN_CONTACT_NUMBER = "60123456789";
+// Admin fee-inquiry contact number — deliberately separate from the
+// public site's general WhatsApp number (SITE_CONFIG.whatsappNumber,
+// used in script.js). Both live in SITE_CONFIG (site-config.js,
+// loaded before this file) — see defaultState() below, where this
+// seeds settings.adminContactNumber.
+const ADMIN_CONTACT_NUMBER = SITE_CONFIG.adminContactNumber;
 
 const HAFAZAN_UNIT_LABELS = {
   juz: { singular: "Juzuk", plural: "Juzuk" },
@@ -54,7 +51,7 @@ const EXAM_PERIODS = [
 function defaultState() {
   return {
     settings: {
-      subjects: ["Bahasa Melayu", "Bahasa Inggeris", "Bahasa Arab", "Matematik", "Sains", "Sejarah", "Pendidikan Islam"],
+      subjects: SITE_CONFIG.subjects.slice(),
       hafazan: { unit: "juz", total: 30 },
       attendance: { target: 90 },
       adminContactNumber: ADMIN_CONTACT_NUMBER,

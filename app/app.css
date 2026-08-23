@@ -24,7 +24,7 @@
   color: var(--on-indigo);
 }
 .portal-header__brand { display: flex; align-items: center; gap: 0.7rem; }
-.portal-header__mark { width: 34px; border-radius: 8px; border: 1px solid rgba(184,147,74,0.5); flex-shrink: 0; }
+.portal-header__mark { width: 34px; flex-shrink: 0; }
 .portal-header__brand strong { font-family: var(--font-display); font-size: 1.05rem; display: block; }
 .portal-header__sub { font-size: 0.74rem; color: var(--on-indigo-soft); }
 .portal-header__actions { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
@@ -423,7 +423,7 @@
   padding: var(--space-l) var(--space-m);
   text-align: center;
 }
-.login-brand__mark { width: 64px; border-radius: 14px; border: 1.5px solid var(--gold-soft); margin: 0 auto 0.8rem; }
+.login-brand__mark { width: 64px; margin: 0 auto 0.8rem; }
 .login-brand h1 { font-size: clamp(1.6rem, 1.3rem + 1vw, 2rem); }
 .login-brand p { color: var(--ink-soft); margin-top: 0.4rem; }
 .login-brand__credit { font-size: 0.76rem; color: var(--ink-soft); opacity: 0.75; margin-top: 0.2rem !important; }

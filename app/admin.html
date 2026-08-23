@@ -8,14 +8,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Public+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../styles.css">
 <link rel="stylesheet" href="app.css">
+<script src="../site-config.js"></script>
+<script>document.title = `Panel Admin — ${SITE_CONFIG.name}`;</script>
 </head>
 <body class="portal-body">
 
 <header class="portal-header">
   <div class="portal-header__brand">
-    <span class="mark-crop portal-header__mark"><img src="../logo.png" alt="Lambang Maahad Cahaya Ilmu"></span>
+    <span class="mark-crop portal-header__mark"><img src="../logo-transparent.png" data-config-logo data-config-alt="name" alt="Lambang Maahad Cahaya Ilmu"></span>
     <div>
-      <strong>Maahad Cahaya Ilmu</strong>
+      <strong data-config="name">Maahad Cahaya Ilmu</strong>
       <span class="portal-header__sub">Panel Admin</span>
     </div>
   </div>

@@ -1,15 +1,10 @@
-// ============================================================
-// REPLACE BEFORE DEMO: real WhatsApp number, digits only,
-// country code first (e.g. Malaysia: 601XXXXXXXX).
-// This is the madrasah's general public-facing number — every
-// wa.me link on this page uses it. There is a SECOND, separate
-// placeholder number for parent fee inquiries in app/data.js
-// (ADMIN_CONTACT_NUMBER) — replace that one too.
-// ============================================================
-const WHATSAPP_NUMBER = "60123456789";
-
+// WhatsApp number, subject list, address, etc. now live in
+// SITE_CONFIG (site-config.js, loaded before this file) — see that
+// file to rebrand for a different madrasah. There is a SECOND,
+// separate contact number for parent fee inquiries in app/data.js
+// (SITE_CONFIG.adminContactNumber), used only inside the portal.
 const CONTACT = {
-  whatsappNumber: WHATSAPP_NUMBER,
+  whatsappNumber: SITE_CONFIG.whatsappNumber,
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -17,6 +12,46 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("[data-wa-link]").forEach((link) => {
     link.href = `https://wa.me/${CONTACT.whatsappNumber}`;
   });
+
+  // ── Title/meta tags — the literal text in index.html <head> is the
+  //    static fallback for non-JS crawlers; this brings them in line
+  //    with SITE_CONFIG for everything else. ──
+  document.title = `${SITE_CONFIG.name} — Tahfiz & Akademik, ${SITE_CONFIG.location}`;
+  document.querySelector('meta[name="description"]').content =
+    `${SITE_CONFIG.name} di ${SITE_CONFIG.location} — pondok tahfiz yang menggabungkan hafazan Al-Quran dengan pendidikan akademik.`;
+  document.querySelector('meta[name="theme-color"]').content = SITE_CONFIG.colors.teal;
+  document.querySelector('meta[property="og:site_name"]').content = SITE_CONFIG.name;
+  document.querySelector('meta[property="og:title"]').content = document.title;
+  document.querySelector('meta[property="og:description"]').content =
+    `Pondok tahfiz di ${SITE_CONFIG.location} yang menggabungkan hafazan Al-Quran dengan pendidikan akademik — dengan kemajuan anak dihantar terus ke telefon ibu bapa.`;
+  document.querySelector('meta[property="og:image"]').content = SITE_CONFIG_BASE + SITE_CONFIG.logoSocial;
+  document.querySelector('meta[name="twitter:title"]').content = document.title;
+  document.querySelector('meta[name="twitter:description"]').content =
+    `Pondok tahfiz di ${SITE_CONFIG.location} yang menggabungkan hafazan Al-Quran dengan pendidikan akademik.`;
+  document.querySelector('meta[name="twitter:image"]').content = SITE_CONFIG_BASE + SITE_CONFIG.logoSocial;
+
+  // ── Subject list ("Bab Kedua — Akademik") ──
+  const subjectList = document.getElementById("subject-list");
+  if (subjectList) {
+    subjectList.innerHTML = "";
+    SITE_CONFIG.subjects.forEach((subj) => {
+      const li = document.createElement("li");
+      li.textContent = subj;
+      subjectList.appendChild(li);
+    });
+  }
+
+  // ── Contact address + map (city-level query, not a pinned address) ──
+  const addressEl = document.getElementById("contact-address");
+  if (addressEl) {
+    const addr = SITE_CONFIG.address;
+    addressEl.innerHTML = `${SITE_CONFIG.name}<br>${addr.line2}<br>${addr.line3}`;
+    const mapQuery = encodeURIComponent(addr.mapQuery);
+    document.getElementById("contact-map-link").href = `https://www.google.com/maps?q=${mapQuery}`;
+    const mapFrame = document.getElementById("contact-map-frame");
+    mapFrame.src = `https://www.google.com/maps?q=${mapQuery}&z=12&output=embed`;
+    mapFrame.title = `Peta kawasan ${addr.mapQuery} (ilustrasi, bukan lokasi sebenar)`;
+  }
 
   // ── Mini header appears once the hero has scrolled past ──
   const miniHeader = document.querySelector(".mini-header");
