@@ -263,7 +263,7 @@ h1, h2, h3 {
 }
 
 .hero__mark {
-  width: 76px;
+  width: 92px;
   opacity: 0;
   animation: rise 0.8s ease 2.05s forwards;
 }
