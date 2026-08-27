@@ -29,6 +29,7 @@
 
 <nav class="portal-tabs" id="portal-tabs">
   <button class="portal-tabs__btn is-active" data-tab="pelajar" type="button">Pelajar</button>
+  <button class="portal-tabs__btn" data-tab="kehadiran" type="button">Kehadiran</button>
   <!-- Yuran tab button is inserted by JS only when FEATURES.finance is true — see renderYuranPanel() -->
   <button class="portal-tabs__btn" data-tab="tetapan" type="button">Tetapan</button>
 </nav>
@@ -63,6 +64,73 @@
         </thead>
         <tbody id="student-table-body"></tbody>
       </table>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       KEHADIRAN — two sub-tabs: daily entry (teacher-facing) and
+       the register grid + inline Bersurat correction (admin-facing).
+       Both read/write the same attendanceLog daily records — see
+       data.js. Replaces the old standalone attendance.html /
+       bersurat.html pages, which no longer exist.
+       ============================================================ -->
+  <section class="portal-panel" data-panel="kehadiran" id="panel-kehadiran" hidden>
+    <div class="panel-head"><h1>Kehadiran</h1></div>
+
+    <nav class="subtabs" id="kehadiran-subtabs">
+      <button class="subtabs__btn is-active" data-subtab="ambil" type="button">Ambil Kehadiran</button>
+      <button class="subtabs__btn" data-subtab="semakan" type="button">
+        Rekod &amp; Semakan
+        <span class="badge-count" id="semakan-badge" hidden></span>
+      </button>
+    </nav>
+
+    <!-- ---- Ambil Kehadiran: daily entry, one class/day at a time ---- -->
+    <div class="subpanel is-active" data-subpanel="ambil" id="subpanel-ambil">
+      <div class="panel-head">
+        <span class="panel-head__meta" id="ambil-count-meta">0/0 Hadir</span>
+      </div>
+      <div class="inline-form attendance-controls">
+        <div class="field">
+          <label for="ambil-class-select">Kelas</label>
+          <select id="ambil-class-select"></select>
+        </div>
+        <div class="field">
+          <label for="ambil-date-input">Tarikh</label>
+          <input type="date" id="ambil-date-input">
+        </div>
+        <button class="btn btn--secondary btn--small" id="btn-mark-all-present" type="button">Tandakan Semua Hadir</button>
+      </div>
+      <div class="attendance-list" id="ambil-list"></div>
+      <p class="empty-note" id="ambil-empty" hidden>Tiada pelajar dalam kelas ini.</p>
+      <div class="attendance-legend">
+        <span><span class="att-chip att-chip--inline att-chip--hadir" aria-hidden="true">H</span> Hadir</span>
+        <span><span class="att-chip att-chip--inline att-chip--tidak-hadir" aria-hidden="true">T</span> Tidak Hadir</span>
+        <span><span class="att-chip att-chip--inline att-chip--lewat" aria-hidden="true">L</span> Lewat</span>
+      </div>
+    </div>
+
+    <!-- ---- Rekod & Semakan: spreadsheet register + inline Bersurat ---- -->
+    <div class="subpanel" data-subpanel="semakan" id="subpanel-semakan" hidden>
+      <div class="inline-form attendance-controls">
+        <div class="field">
+          <label for="semakan-class-select">Kelas</label>
+          <select id="semakan-class-select"></select>
+        </div>
+        <div class="field">
+          <label for="semakan-month-input">Bulan</label>
+          <input type="month" id="semakan-month-input">
+        </div>
+        <label class="checkbox-field">
+          <input type="checkbox" id="semakan-unresolved-toggle">
+          Tunjuk hanya belum disahkan
+        </label>
+      </div>
+      <p class="card__hint">Tekan sel "T" yang bergaris untuk tandakan Bersurat.</p>
+      <div class="register-scroll" id="register-scroll">
+        <table class="register-table" id="register-table"></table>
+      </div>
+      <p class="empty-note" id="semakan-empty" hidden>Tiada pelajar sepadan dengan tapisan semasa.</p>
     </div>
   </section>
 
@@ -136,6 +204,19 @@
 
 </main>
 
+<!-- Save bar for Ambil Kehadiran — pinned to the viewport bottom so a
+     teacher scrolling a long class roster never has to scroll back
+     down to save. Only ever visible while that sub-tab is active. -->
+<div class="attendance-savebar" id="ambil-savebar" hidden>
+  <button class="btn" id="btn-save-attendance" type="button">Simpan Kehadiran</button>
+</div>
+
+<!-- Anchored popover for resolving one unresolved "T" cell in the
+     Rekod & Semakan register — positioned next to whichever cell was
+     tapped (see openBersuratPopover()), not a centered page-blocking
+     modal, since it only ever concerns one single cell. -->
+<div class="cell-popover" id="cell-popover" hidden></div>
+
 <div class="modal-overlay" id="modal-overlay" hidden>
   <div class="modal" id="modal-root"></div>
 </div>
@@ -182,13 +263,8 @@
     return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
-  function todayIso() {
-    // Static "today" for this demo build rather than a live clock —
-    // keeps seed data and freshly-added records in the same
-    // timeframe. Swap for `new Date().toISOString().slice(0,10)` if
-    // this ever needs to track the real clock.
-    return "2026-08-01";
-  }
+  // todayIso() lives in data.js — shared across every admin view that
+  // needs the same fixed demo "today" (Ambil Kehadiran, hafazan/fee entry).
 
   // ── Logout ──────────────────────────────────────────────────
   document.getElementById("btn-logout").addEventListener("click", () => {
@@ -209,8 +285,17 @@
   // renderYuranPanel() is picked up without extra wiring.
   const tabsNav = document.getElementById("portal-tabs");
   function activateTab(tabName) {
+    // Ambil Kehadiran holds unsaved edits in memory until "Simpan
+    // Kehadiran" (see the Kehadiran section below) — leaving the tab
+    // silently would discard them, so guard the same way switching
+    // class/date within that sub-tab already does.
+    if (typeof isAmbilDirty === "function" && isAmbilDirty() && !confirm("Ada perubahan belum disimpan untuk kelas/tarikh semasa. Tukar tanpa menyimpan?")) {
+      return;
+    }
     tabsNav.querySelectorAll(".portal-tabs__btn").forEach((btn) => btn.classList.toggle("is-active", btn.dataset.tab === tabName));
     document.querySelectorAll(".portal-panel").forEach((panel) => { panel.hidden = panel.dataset.panel !== tabName; });
+    const savebar = document.getElementById("ambil-savebar");
+    if (savebar) savebar.hidden = !(tabName === "kehadiran" && isAmbilSubtabActive());
   }
   tabsNav.addEventListener("click", (e) => {
     const btn = e.target.closest(".portal-tabs__btn");
@@ -506,10 +591,13 @@
   }
 
   // ================================================================
-  // KEHADIRAN — one rate per calendar month: add/remove monthly
-  // entries, shown as both a table and a trend chart against the
-  // madrasah-wide target. Same source-of-truth pattern as hafazan —
-  // there is no separate flat "attendance" field to keep in sync.
+  // KEHADIRAN — read-only: a calculated monthly rollup of daily
+  // attendance records, plus the most recent daily rows. There is no
+  // add/edit form here any more — daily status is entered per class in
+  // the Kehadiran tab's Ambil Kehadiran sub-tab and "tidak-hadir" days
+  // are resolved to "bersurat" in its Rekod & Semakan sub-tab (below);
+  // this modal is purely a per-student drill-down into what those two
+  // sub-tabs have produced.
   // ================================================================
   function openAttendanceModal(studentId) {
     const student = getStudent(state, studentId);
@@ -521,83 +609,55 @@
       const average = getAttendanceAverage(student);
       const points = attendanceRatePoints(student);
       const rowsDesc = points.slice().reverse();
+      const recentDaily = sortedAttendanceLog(student, "desc").slice(0, 14);
 
       return `
         <div class="card__head">
           <span class="stat-pill">${latest ? latest.rate + "%" : "—"} <small>bulan terkini</small></span>
           <span class="panel-head__meta">${average === null ? "—" : "Purata " + average + "%"} · Sasaran ${attendance.target}%</span>
         </div>
+        <p class="card__hint">Dikira daripada rekod kehadiran harian — hari "Bersurat" tidak dikira dalam atau melawan peratus. Kemaskini di tab <button type="button" class="link-btn" data-goto-kehadiran>Kehadiran</button>.</p>
         <div class="chart-card" id="attendance-chart-mount"></div>
         <div class="table-wrap" style="margin-bottom:1rem;">
           ${rowsDesc.length ? `
             <table class="data-table stack-table">
-              <thead><tr><th>Bulan</th><th>Kehadiran</th><th></th></tr></thead>
+              <thead><tr><th>Bulan</th><th>Kehadiran</th></tr></thead>
               <tbody>
                 ${rowsDesc.map((p) => `
                   <tr>
                     <td data-label="Bulan">${formatMonth(p.entry.month)}</td>
                     <td data-label="Kehadiran">${p.entry.rate}%</td>
-                    <td data-label=""><button class="row-delete-btn" type="button" data-delete-entry="${p.entry.id}" aria-label="Padam rekod">&times;</button></td>
                   </tr>
                 `).join("")}
               </tbody>
             </table>
           ` : '<p class="empty-note">Belum ada rekod kehadiran bulanan.</p>'}
         </div>
-        <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Tambah Rekod Bulan Ini</h3>
-        <div class="inline-form">
-          <div class="field">
-            <label for="attendance-entry-month">Bulan</label>
-            <input type="month" id="attendance-entry-month" value="${todayIso().slice(0, 7)}">
+        <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Rekod Harian Terkini</h3>
+        ${recentDaily.length ? `
+          <div class="table-wrap">
+            <table class="data-table stack-table">
+              <thead><tr><th>Tarikh</th><th>Status</th><th>Catatan</th></tr></thead>
+              <tbody>
+                ${recentDaily.map((e) => `
+                  <tr>
+                    <td data-label="Tarikh">${formatDate(e.date)}</td>
+                    <td data-label="Status"><span class="att-chip att-chip--inline att-chip--${e.status}">${ATTENDANCE_STATUSES[e.status].letter}</span> ${ATTENDANCE_STATUSES[e.status].label}</td>
+                    <td data-label="Catatan">${e.note ? escapeHtml(e.note) : '<span class="cell-muted">—</span>'}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
           </div>
-          <div class="field">
-            <label for="attendance-entry-rate">Kehadiran (%)</label>
-            <input type="number" id="attendance-entry-rate" min="0" max="100" step="1" value="${latest ? latest.rate : 90}">
-          </div>
-          <button class="btn btn--secondary btn--small" id="btn-add-attendance-entry" type="button">Tambah</button>
-        </div>
+        ` : '<p class="empty-note">Belum ada rekod kehadiran harian.</p>'}
       `;
     }
 
     function renderModalBody() {
       modalRoot.querySelector("#attendance-modal-body").innerHTML = bodyHtml();
-      const chartMount = document.getElementById("attendance-chart-mount");
-      renderAttendanceChart(chartMount, attendanceRatePoints(student), attendance.target);
-
-      modalRoot.querySelectorAll("[data-delete-entry]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const ok = confirm("Padam rekod kehadiran ini?");
-          if (!ok) return;
-          student.attendanceLog = student.attendanceLog.filter((e) => e.id !== btn.dataset.deleteEntry);
-          persist();
-          renderModalBody();
-          renderStudentTable();
-          renderDashboardStats();
-          showToast("Rekod kehadiran dipadam.");
-        });
-      });
-
-      document.getElementById("btn-add-attendance-entry").addEventListener("click", () => {
-        const month = document.getElementById("attendance-entry-month").value;
-        const rate = Number(document.getElementById("attendance-entry-rate").value);
-        if (!month || isNaN(rate) || rate < 0 || rate > 100) {
-          alert("Sila isi bulan dan peratus kehadiran yang sah (0-100).");
-          return;
-        }
-        const existing = student.attendanceLog.find((e) => e.month === month);
-        if (existing) {
-          const ok = confirm(`Rekod untuk ${formatMonth(month)} sudah wujud (${existing.rate}%). Gantikan dengan ${rate}%?`);
-          if (!ok) return;
-          existing.rate = rate;
-        } else {
-          student.attendanceLog.push({ id: uid("a"), month, rate });
-        }
-        persist();
-        renderModalBody();
-        renderStudentTable();
-        renderDashboardStats();
-        showToast("Rekod kehadiran bulanan disimpan.");
-      });
+      renderAttendanceChart(document.getElementById("attendance-chart-mount"), attendanceRatePoints(student), attendance.target);
+      const gotoBtn = modalRoot.querySelector("[data-goto-kehadiran]");
+      if (gotoBtn) gotoBtn.addEventListener("click", () => { closeModal(); activateTab("kehadiran"); });
     }
 
     openModal(`
@@ -614,6 +674,329 @@
     modalRoot.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeModal));
     renderModalBody();
   }
+
+  // ================================================================
+  // KEHADIRAN PANEL — two sub-tabs sharing one data model
+  // (attendanceLog daily records, data.js): Ambil Kehadiran writes
+  // them (teacher-facing daily entry), Rekod & Semakan reads and
+  // corrects them (admin-facing register grid + inline Bersurat).
+  // Replaces the old standalone attendance.html / bersurat.html pages.
+  // ================================================================
+  const kehadiranClasses = getClassList(state);
+
+  // ---- sub-tab switching ------------------------------------------
+  const subtabsNav = document.getElementById("kehadiran-subtabs");
+  const ambilSavebar = document.getElementById("ambil-savebar");
+
+  function isAmbilSubtabActive() {
+    return subtabsNav.querySelector('[data-subtab="ambil"]').classList.contains("is-active");
+  }
+  function activateSubtab(name) {
+    if (name !== "ambil" && isAmbilDirty() && !confirm("Ada perubahan belum disimpan untuk kelas/tarikh semasa. Tukar tanpa menyimpan?")) {
+      return;
+    }
+    subtabsNav.querySelectorAll(".subtabs__btn").forEach((btn) => btn.classList.toggle("is-active", btn.dataset.subtab === name));
+    document.querySelectorAll(".subpanel").forEach((panel) => { panel.hidden = panel.dataset.subpanel !== name; });
+    ambilSavebar.hidden = name !== "ambil";
+    if (name === "semakan") renderRegisterGrid();
+  }
+  subtabsNav.addEventListener("click", (e) => {
+    const btn = e.target.closest(".subtabs__btn");
+    if (btn) activateSubtab(btn.dataset.subtab);
+  });
+
+  // ---- Ambil Kehadiran (Tab 1: daily entry) ------------------------
+  // "Bersurat" is deliberately excluded from this cycle — only an
+  // admin resolves a day to "bersurat", in Rekod & Semakan, never a
+  // teacher marking daily attendance here.
+  const AMBIL_STATUSES = ["hadir", "tidak-hadir", "lewat"];
+  const ambilClassSelect = document.getElementById("ambil-class-select");
+  const ambilDateInput = document.getElementById("ambil-date-input");
+  const ambilListMount = document.getElementById("ambil-list");
+  const ambilEmptyNote = document.getElementById("ambil-empty");
+  const ambilCountMeta = document.getElementById("ambil-count-meta");
+
+  kehadiranClasses.forEach((c) => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    ambilClassSelect.appendChild(opt);
+  });
+  ambilDateInput.value = todayIso();
+
+  // In-memory only until "Simpan Kehadiran" — a teacher scrolling and
+  // tapping through 30 students shouldn't have each tap hit
+  // localStorage; one write on save is both simpler and cheaper.
+  let ambilDraft = null; // { [studentId]: status }
+  let ambilDraftClass = null;
+  let ambilDraftDate = null;
+  let ambilDirtyFlag = false;
+
+  function isAmbilDirty() { return ambilDirtyFlag; }
+
+  function ambilClassStudents(className) {
+    return state.students.filter((s) => s.className === className).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  function loadAmbilDraft(className, date) {
+    ambilDraft = {};
+    ambilClassStudents(className).forEach((s) => {
+      const existing = getAttendanceForDate(s, date);
+      // No record yet for this day defaults to "hadir" — the common
+      // case is everyone present, so a teacher only has to touch the
+      // exceptions (see also "Tandakan Semua Hadir" below).
+      ambilDraft[s.id] = existing ? existing.status : "hadir";
+    });
+    ambilDraftClass = className;
+    ambilDraftDate = date;
+    ambilDirtyFlag = false;
+  }
+
+  function confirmDiscardAmbilIfDirty() {
+    if (!isAmbilDirty()) return true;
+    return confirm("Ada perubahan belum disimpan untuk kelas/tarikh semasa. Tukar tanpa menyimpan?");
+  }
+
+  function renderAmbilCount() {
+    const students = ambilClassStudents(ambilDraftClass);
+    const hadirCount = students.filter((s) => ambilDraft[s.id] === "hadir").length;
+    ambilCountMeta.textContent = `${hadirCount}/${students.length} Hadir`;
+  }
+
+  function renderAmbilList() {
+    const students = ambilClassStudents(ambilDraftClass);
+    ambilEmptyNote.hidden = students.length > 0;
+    ambilListMount.innerHTML = students.map((s) => {
+      const status = ambilDraft[s.id];
+      const segments = AMBIL_STATUSES.map((st) => `
+        <button type="button"
+          class="status-segmented__btn status-segmented__btn--${st} ${st === status ? "is-active" : ""}"
+          data-student="${s.id}" data-status="${st}"
+          aria-pressed="${st === status}">${ATTENDANCE_STATUSES[st].letter}</button>
+      `).join("");
+      return `
+        <div class="attendance-row">
+          <span class="attendance-row__name">${escapeHtml(s.name)}</span>
+          <div class="status-segmented" role="group" aria-label="Status kehadiran ${escapeHtml(s.name)}">${segments}</div>
+        </div>
+      `;
+    }).join("");
+
+    ambilListMount.querySelectorAll("[data-student]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.student;
+        const status = btn.dataset.status;
+        if (ambilDraft[id] === status) return;
+        ambilDraft[id] = status;
+        ambilDirtyFlag = true;
+        renderAmbilList();
+      });
+    });
+
+    renderAmbilCount();
+  }
+
+  function loadAndRenderAmbil(className, date) {
+    loadAmbilDraft(className, date);
+    renderAmbilList();
+  }
+
+  ambilClassSelect.addEventListener("change", () => {
+    if (!confirmDiscardAmbilIfDirty()) { ambilClassSelect.value = ambilDraftClass; return; }
+    loadAndRenderAmbil(ambilClassSelect.value, ambilDateInput.value);
+  });
+  ambilDateInput.addEventListener("change", () => {
+    if (!ambilDateInput.value) { ambilDateInput.value = ambilDraftDate; return; }
+    if (!confirmDiscardAmbilIfDirty()) { ambilDateInput.value = ambilDraftDate; return; }
+    loadAndRenderAmbil(ambilClassSelect.value, ambilDateInput.value);
+  });
+  document.getElementById("btn-mark-all-present").addEventListener("click", () => {
+    ambilClassStudents(ambilDraftClass).forEach((s) => { ambilDraft[s.id] = "hadir"; });
+    ambilDirtyFlag = true;
+    renderAmbilList();
+  });
+  document.getElementById("btn-save-attendance").addEventListener("click", () => {
+    const students = ambilClassStudents(ambilDraftClass);
+    if (!students.length) return;
+    students.forEach((s) => { setAttendanceForDate(s, ambilDraftDate, ambilDraft[s.id], null); });
+    persist();
+    ambilDirtyFlag = false;
+    showToast(`Kehadiran ${ambilDraftClass} · ${formatDate(ambilDraftDate)} disimpan.`);
+    renderStudentTable();
+    renderDashboardStats();
+    renderSemakanBadge();
+  });
+
+  if (kehadiranClasses.length) loadAndRenderAmbil(ambilClassSelect.value, ambilDateInput.value);
+  else ambilEmptyNote.hidden = false;
+
+  // ---- Rekod & Semakan (Tab 2: register grid + inline correction) --
+  const semakanClassSelect = document.getElementById("semakan-class-select");
+  const semakanMonthInput = document.getElementById("semakan-month-input");
+  const semakanUnresolvedToggle = document.getElementById("semakan-unresolved-toggle");
+  const semakanTable = document.getElementById("register-table");
+  const semakanEmptyNote = document.getElementById("semakan-empty");
+  const semakanBadge = document.getElementById("semakan-badge");
+  const cellPopover = document.getElementById("cell-popover");
+
+  kehadiranClasses.forEach((c) => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    semakanClassSelect.appendChild(opt);
+  });
+  // Defaults to the most recent month with any recorded data, not
+  // "today"'s month — today's own month may not have a single record
+  // yet this early into it, which would otherwise land an admin on a
+  // blank grid the first time they open this sub-tab.
+  function latestAttendanceMonth() {
+    let latest = null;
+    state.students.forEach((s) => s.attendanceLog.forEach((e) => { if (!latest || e.date > latest) latest = e.date; }));
+    return latest ? latest.slice(0, 7) : todayIso().slice(0, 7);
+  }
+  semakanMonthInput.value = latestAttendanceMonth();
+
+  function semakanClassStudents() {
+    return state.students.filter((s) => s.className === semakanClassSelect.value).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  function unresolvedCountFor(student, monthPrefix) {
+    return student.attendanceLog.filter((e) => e.status === "tidak-hadir" && e.date.startsWith(monthPrefix)).length;
+  }
+
+  // Scoped to the currently selected class + month, not a global
+  // count — the grid itself only ever shows that one class/month at a
+  // time, so the badge tracks exactly what's on screen (or one tap
+  // away via the "only unresolved" toggle), not the whole madrasah.
+  function renderSemakanBadge() {
+    if (!kehadiranClasses.length) return;
+    const monthPrefix = semakanMonthInput.value;
+    const count = semakanClassStudents().reduce((sum, s) => sum + unresolvedCountFor(s, monthPrefix), 0);
+    semakanBadge.hidden = count === 0;
+    semakanBadge.textContent = count;
+  }
+
+  function renderRegisterGrid() {
+    closeCellPopover();
+    if (!kehadiranClasses.length) return;
+    const monthPrefix = semakanMonthInput.value;
+    let students = semakanClassStudents();
+
+    // Columns: every date that actually has at least one record among
+    // this class this month (computed before the "only unresolved"
+    // filter below, so the column set stays stable regardless of it),
+    // not every calendar day — a weekend or never-recorded day simply
+    // isn't a column.
+    const dateSet = new Set();
+    students.forEach((s) => s.attendanceLog.forEach((e) => { if (e.date.startsWith(monthPrefix)) dateSet.add(e.date); }));
+    const dates = Array.from(dateSet).sort();
+
+    if (semakanUnresolvedToggle.checked) {
+      students = students.filter((s) => unresolvedCountFor(s, monthPrefix) > 0);
+    }
+
+    renderSemakanBadge();
+
+    const hasContent = students.length > 0 && dates.length > 0;
+    semakanEmptyNote.hidden = hasContent;
+    semakanEmptyNote.textContent = students.length === 0
+      ? "Tiada pelajar sepadan dengan tapisan semasa."
+      : "Tiada rekod kehadiran untuk kelas/bulan ini.";
+    if (!hasContent) { semakanTable.innerHTML = ""; return; }
+
+    const headCells = dates.map((d) => `<th title="${formatDate(d)}">${Number(d.slice(8, 10))}</th>`).join("");
+    const bodyRows = students.map((s) => {
+      const cells = dates.map((d) => {
+        const entry = getAttendanceForDate(s, d);
+        if (!entry) return `<td class="register-cell register-cell--empty">&middot;</td>`;
+        const isUnresolved = entry.status === "tidak-hadir";
+        const attrs = isUnresolved ? `data-resolve-student="${s.id}" data-resolve-date="${d}"` : "";
+        return `<td class="register-cell register-cell--${entry.status}${isUnresolved ? " is-unresolved" : ""}" ${attrs}
+          title="${escapeHtml(s.name)} &middot; ${formatDate(d)} &middot; ${ATTENDANCE_STATUSES[entry.status].label}">${ATTENDANCE_STATUSES[entry.status].letter}</td>`;
+      }).join("");
+      return `<tr><th class="register-name">${escapeHtml(s.name)}</th>${cells}</tr>`;
+    }).join("");
+
+    semakanTable.innerHTML = `
+      <thead><tr><th class="register-name">Nama</th>${headCells}</tr></thead>
+      <tbody>${bodyRows}</tbody>
+    `;
+
+    semakanTable.querySelectorAll("[data-resolve-student]").forEach((cell) => {
+      cell.addEventListener("click", () => openBersuratPopover(cell));
+    });
+  }
+
+  function closeCellPopover() {
+    cellPopover.hidden = true;
+    cellPopover.innerHTML = "";
+    document.removeEventListener("click", onPopoverOutsideClick, true);
+  }
+  function onPopoverOutsideClick(e) {
+    if (!cellPopover.contains(e.target)) closeCellPopover();
+  }
+
+  // Anchored next to the tapped cell (see .cell-popover in app.css) —
+  // deliberately not the shared centered modal-overlay, since this
+  // only ever concerns the one cell just tapped.
+  function openBersuratPopover(cell) {
+    closeCellPopover();
+    const studentId = cell.dataset.resolveStudent;
+    const date = cell.dataset.resolveDate;
+    const student = getStudent(state, studentId);
+    if (!student) return;
+
+    cellPopover.innerHTML = `
+      <div class="cell-popover__head">
+        <strong>${escapeHtml(student.name)}</strong>
+        <span>${formatDate(date)}</span>
+      </div>
+      <div class="field">
+        <label for="popover-note-input">Catatan (pilihan)</label>
+        <input type="text" id="popover-note-input" placeholder="Cth: demam">
+      </div>
+      <div class="cell-popover__actions">
+        <button class="btn btn--ghost btn--small" type="button" id="popover-cancel" style="color:var(--ink); border-color: rgba(43,35,24,0.2);">Batal</button>
+        <button class="btn btn--small" type="button" id="popover-confirm">Tandakan Bersurat</button>
+      </div>
+    `;
+
+    cellPopover.hidden = false;
+    const rect = cell.getBoundingClientRect();
+    const popW = cellPopover.offsetWidth;
+    const popH = cellPopover.offsetHeight;
+    let left = rect.left + rect.width / 2 - popW / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - popW - 8));
+    let top = rect.bottom + 8;
+    if (top + popH > window.innerHeight - 8) top = rect.top - popH - 8;
+    cellPopover.style.left = `${left}px`;
+    cellPopover.style.top = `${Math.max(8, top)}px`;
+
+    document.getElementById("popover-cancel").addEventListener("click", closeCellPopover);
+    document.getElementById("popover-confirm").addEventListener("click", () => {
+      const note = document.getElementById("popover-note-input").value.trim();
+      setAttendanceForDate(student, date, "bersurat", note);
+      persist();
+      closeCellPopover();
+      renderRegisterGrid();
+      renderStudentTable();
+      renderDashboardStats();
+      showToast(`${student.name} · ${formatDate(date)} ditandakan Bersurat.`);
+    });
+
+    // Deferred so this click (the one that opened the popover) isn't
+    // immediately seen by the listener as an "outside" click.
+    setTimeout(() => document.addEventListener("click", onPopoverOutsideClick, true), 0);
+  }
+
+  semakanClassSelect.addEventListener("change", renderRegisterGrid);
+  semakanMonthInput.addEventListener("change", () => {
+    if (!semakanMonthInput.value) semakanMonthInput.value = todayIso().slice(0, 7);
+    renderRegisterGrid();
+  });
+  semakanUnresolvedToggle.addEventListener("change", renderRegisterGrid);
+
+  renderSemakanBadge();
 
   // ================================================================
   // YURAN — the tab button, panel, and all its contents are created
@@ -654,7 +1037,7 @@
     mount.innerHTML = `
       <div class="panel-head">
         <h1>Yuran</h1>
-        <button class="btn btn--small" id="btn-bulk-charge" type="button">Cajkan yuran bulanan untuk semua pelajar</button>
+        <button class="btn btn--small" id="btn-bulk-charge" type="button">Cajkan Yuran Secara Pukal</button>
       </div>
       <div class="table-wrap">
         <table class="data-table">
@@ -693,6 +1076,7 @@
   function openLedgerModal(studentId) {
     const student = getStudent(state, studentId);
     if (!student) return;
+    const feeTypes = state.settings.feeTypes;
 
     function ledgerRows() {
       if (!student.fees.ledger.length) return '<p class="empty-note">Tiada rekod yuran lagi.</p>';
@@ -703,7 +1087,7 @@
             ${student.fees.ledger.slice().sort((a, b) => a.date.localeCompare(b.date)).map((entry) => `
               <tr>
                 <td>${formatDate(entry.date)}</td>
-                <td>${escapeHtml(entry.description)}</td>
+                <td>${escapeHtml(feeEntryLabel(state, entry))}</td>
                 <td>${entry.type === "charge" ? "+" : "-"}${formatMoney(entry.amount)}</td>
               </tr>
             `).join("")}
@@ -711,67 +1095,127 @@
         </table>`;
     }
 
+    function renderModalBody() {
+      modalRoot.querySelector("#ledger-modal-body").innerHTML = `
+        <p class="card__hint">Baki semasa: <strong>${formatMoney(getStudentBalance(student))}</strong></p>
+        <div class="table-wrap" style="margin-bottom:1rem;">${ledgerRows()}</div>
+
+        <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Tambah Caj</h3>
+        ${feeTypes.length ? `
+          <div class="inline-form">
+            <div class="field">
+              <label for="charge-feetype-select">Jenis Yuran</label>
+              <select id="charge-feetype-select">
+                ${feeTypes.map((ft) => `<option value="${ft.id}">${escapeHtml(ft.name)}</option>`).join("")}
+              </select>
+            </div>
+            <div class="field">
+              <label for="charge-amount-input">Jumlah (RM)</label>
+              <input type="number" min="0" step="0.01" id="charge-amount-input">
+            </div>
+            <div class="field" style="flex: 2 1 200px;">
+              <label for="charge-note-input">Catatan (pilihan)</label>
+              <input type="text" id="charge-note-input" placeholder="Cth: Ogos 2026">
+            </div>
+            <button class="btn btn--secondary btn--small" id="btn-add-charge" type="button">Tambah Caj</button>
+          </div>
+        ` : '<p class="empty-note">Tiada jenis yuran dalam Tetapan lagi.</p>'}
+
+        <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Rekod Bayaran</h3>
+        <div class="inline-form">
+          <div class="field">
+            <label for="payment-amount-input">Jumlah (RM)</label>
+            <input type="number" min="0" step="0.01" id="payment-amount-input">
+          </div>
+          <div class="field" style="flex: 2 1 200px;">
+            <label for="payment-note-input">Catatan (pilihan)</label>
+            <input type="text" id="payment-note-input" placeholder="Cth: Ref: TnG 8821">
+          </div>
+          <button class="btn btn--secondary btn--small" id="btn-add-payment" type="button">Rekod Bayaran</button>
+        </div>
+      `;
+
+      const chargeBtn = document.getElementById("btn-add-charge");
+      if (chargeBtn) {
+        chargeBtn.addEventListener("click", () => {
+          const feeTypeId = document.getElementById("charge-feetype-select").value;
+          const amount = Number(document.getElementById("charge-amount-input").value);
+          const note = document.getElementById("charge-note-input").value.trim();
+          if (!feeTypeId || !amount || amount <= 0) {
+            alert("Sila pilih jenis yuran dan isi jumlah yang sah.");
+            return;
+          }
+          student.fees.ledger.push({ id: uid("f"), date: todayIso(), type: "charge", feeTypeId, amount, note });
+          persist();
+          renderModalBody();
+          renderYuranPanel();
+          showToast("Caj yuran ditambah.");
+        });
+      }
+
+      document.getElementById("btn-add-payment").addEventListener("click", () => {
+        const amount = Number(document.getElementById("payment-amount-input").value);
+        const note = document.getElementById("payment-note-input").value.trim();
+        if (!amount || amount <= 0) {
+          alert("Sila isi jumlah yang sah.");
+          return;
+        }
+        student.fees.ledger.push({ id: uid("f"), date: todayIso(), type: "payment", amount, note });
+        persist();
+        renderModalBody();
+        renderYuranPanel();
+        showToast("Bayaran direkodkan.");
+      });
+    }
+
     openModal(`
       <div class="modal__head">
         <h2>Yuran — ${escapeHtml(student.name)}</h2>
         <button class="modal__close" type="button" data-close>&times;</button>
       </div>
-      <p class="card__hint">Baki semasa: <strong>${formatMoney(getStudentBalance(student))}</strong></p>
-      <div class="table-wrap" style="margin-bottom:1rem;">${ledgerRows()}</div>
-      <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Tambah Rekod</h3>
-      <div class="field">
-        <label for="entry-type-select">Jenis</label>
-        <select id="entry-type-select">
-          <option value="charge">Caj (yuran dikenakan)</option>
-          <option value="payment">Bayaran diterima</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="entry-desc-input">Perkara</label>
-        <input type="text" id="entry-desc-input" placeholder="Cth: Yuran Bulanan Ogos 2026">
-      </div>
-      <div class="field">
-        <label for="entry-amount-input">Jumlah (RM)</label>
-        <input type="number" min="0" step="0.01" id="entry-amount-input">
-      </div>
+      <div id="ledger-modal-body"></div>
       <div class="modal__actions">
-        <button class="btn btn--ghost btn--small" type="button" data-close style="color:var(--ink); border-color: rgba(43,35,24,0.2);">Batal</button>
-        <button class="btn btn--small" type="button" id="btn-add-entry">Tambah</button>
+        <button class="btn btn--small" type="button" data-close>Selesai</button>
       </div>
     `);
-
     modalRoot.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeModal));
-    document.getElementById("btn-add-entry").addEventListener("click", () => {
-      const type = document.getElementById("entry-type-select").value;
-      const description = document.getElementById("entry-desc-input").value.trim();
-      const amount = Number(document.getElementById("entry-amount-input").value);
-      if (!description || !amount || amount <= 0) {
-        alert("Sila isi perkara dan jumlah yang sah.");
-        return;
-      }
-      student.fees.ledger.push({ id: uid("f"), date: todayIso(), description, amount, type });
-      persist();
-      renderYuranPanel();
-      closeModal();
-      showToast("Rekod yuran ditambah.");
-    });
+    renderModalBody();
   }
 
+  // Bulk charge only — there is no bulk payment. A charge is the same
+  // amount applied identically to a whole class (this month's fee for
+  // everyone), which is what bulk actually means in a real madrasah;
+  // a payment is inherently a per-student event (different parents pay
+  // different amounts on different days), so it only ever makes sense
+  // recorded one at a time in openLedgerModal above.
   function openBulkChargeModal() {
     const classes = getClassList(state);
+    const feeTypes = state.settings.feeTypes;
+    if (!feeTypes.length) {
+      alert("Sila tambah sekurang-kurangnya satu jenis yuran dalam Tetapan dahulu.");
+      return;
+    }
+    const bulananId = feeTypes.find((ft) => ft.name.toLowerCase() === "yuran bulanan")?.id || feeTypes[0].id;
+
     openModal(`
       <div class="modal__head">
-        <h2>Cajkan Yuran Bulanan</h2>
+        <h2>Cajkan Yuran Secara Pukal</h2>
         <button class="modal__close" type="button" data-close>&times;</button>
       </div>
       <p class="card__hint">Satu caj akan ditambah kepada ledger yuran setiap pelajar yang dipilih di bawah.</p>
       <div class="field">
-        <label for="bulk-desc-input">Perkara</label>
-        <input type="text" id="bulk-desc-input" value="Yuran Bulanan ${MALAY_MONTHS[new Date().getMonth()]} ${new Date().getFullYear()}">
+        <label for="bulk-feetype-select">Jenis Yuran</label>
+        <select id="bulk-feetype-select">
+          ${feeTypes.map((ft) => `<option value="${ft.id}" ${ft.id === bulananId ? "selected" : ""}>${escapeHtml(ft.name)}</option>`).join("")}
+        </select>
       </div>
       <div class="field">
         <label for="bulk-amount-input">Jumlah (RM)</label>
         <input type="number" min="0" step="0.01" id="bulk-amount-input" value="50">
+      </div>
+      <div class="field">
+        <label for="bulk-note-input">Catatan (pilihan)</label>
+        <input type="text" id="bulk-note-input" value="${MALAY_MONTHS[new Date().getMonth()]} ${new Date().getFullYear()}">
       </div>
       <div class="field">
         <label for="bulk-class-select">Kelas</label>
@@ -788,11 +1232,12 @@
 
     modalRoot.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeModal));
     document.getElementById("btn-confirm-bulk").addEventListener("click", () => {
-      const description = document.getElementById("bulk-desc-input").value.trim();
+      const feeTypeId = document.getElementById("bulk-feetype-select").value;
       const amount = Number(document.getElementById("bulk-amount-input").value);
+      const note = document.getElementById("bulk-note-input").value.trim();
       const className = document.getElementById("bulk-class-select").value;
-      if (!description || !amount || amount <= 0) {
-        alert("Sila isi perkara dan jumlah yang sah.");
+      if (!feeTypeId || !amount || amount <= 0) {
+        alert("Sila pilih jenis yuran dan isi jumlah yang sah.");
         return;
       }
       const targets = state.students.filter((s) => !className || s.className === className);
@@ -800,11 +1245,12 @@
         alert("Tiada pelajar sepadan dengan kelas yang dipilih.");
         return;
       }
-      const ok = confirm(`Cajkan "${description}" (${formatMoney(amount)}) kepada ${targets.length} pelajar${className ? " dalam " + className : ""}?`);
+      const feeTypeName = getFeeTypeName(state, feeTypeId);
+      const ok = confirm(`Cajkan "${feeTypeName}" (${formatMoney(amount)}) kepada ${targets.length} pelajar${className ? " dalam " + className : ""}?`);
       if (!ok) return;
       const today = todayIso();
       targets.forEach((s) => {
-        s.fees.ledger.push({ id: uid("f"), date: today, description, amount, type: "charge" });
+        s.fees.ledger.push({ id: uid("f"), date: today, type: "charge", feeTypeId, amount, note });
       });
       persist();
       renderYuranPanel();
@@ -821,7 +1267,134 @@
     document.getElementById("hafazan-unit-select").value = state.settings.hafazan.unit;
     document.getElementById("hafazan-total-input").value = state.settings.hafazan.total;
     document.getElementById("attendance-target-input").value = state.settings.attendance.target;
+    renderFeeTypesCard();
     renderContactCard();
+  }
+
+  // Built and inserted only when FEATURES.finance is true, same
+  // gating as the admin-contact-card below — no reason for fee-type
+  // management to exist in the DOM when Yuran itself is switched off.
+  function renderFeeTypesCard() {
+    let card = document.getElementById("settings-feetypes-card");
+    if (!FEATURES.finance) {
+      if (card) card.remove();
+      return;
+    }
+    if (!card) {
+      card = document.createElement("div");
+      card.className = "card";
+      card.id = "settings-feetypes-card";
+      card.innerHTML = `
+        <h2>Jenis Yuran</h2>
+        <p class="card__hint">Jenis yuran yang tersedia semasa mengenakan caj kepada pelajar. Setiap caj mesti dikaitkan dengan salah satu jenis di sini — tiada caj boleh ditaip bebas.</p>
+        <div class="chip-list" id="feetype-chip-list"></div>
+        <div class="inline-form">
+          <div class="field">
+            <label for="new-feetype-input">Tambah jenis yuran</label>
+            <input type="text" id="new-feetype-input" placeholder="Cth: Yuran Aktiviti">
+          </div>
+          <button class="btn btn--secondary btn--small" id="btn-add-feetype" type="button">Tambah</button>
+        </div>
+      `;
+      document.getElementById("settings-subjects-card").after(card);
+      document.getElementById("btn-add-feetype").addEventListener("click", () => {
+        const input = document.getElementById("new-feetype-input");
+        const name = input.value.trim();
+        if (!name) return;
+        if (state.settings.feeTypes.some((f) => f.name.toLowerCase() === name.toLowerCase())) {
+          alert("Jenis yuran ini sudah ada dalam senarai.");
+          return;
+        }
+        state.settings.feeTypes.push({ id: uid("ft"), name });
+        persist();
+        input.value = "";
+        renderFeeTypeChips();
+        showToast(`Jenis yuran "${name}" ditambah.`);
+      });
+    }
+    renderFeeTypeChips();
+  }
+
+  function renderFeeTypeChips() {
+    const list = document.getElementById("feetype-chip-list");
+    if (!list) return;
+    list.innerHTML = "";
+    if (!state.settings.feeTypes.length) {
+      list.innerHTML = '<p class="empty-note">Tiada jenis yuran disenaraikan.</p>';
+      return;
+    }
+    state.settings.feeTypes.forEach((ft) => {
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.innerHTML = `
+        <button type="button" class="chip__label" data-rename-feetype="${ft.id}">${escapeHtml(ft.name)}</button>
+        <button type="button" data-remove-feetype="${ft.id}" aria-label="Buang ${escapeHtml(ft.name)}">&times;</button>
+      `;
+      list.appendChild(chip);
+    });
+    list.querySelectorAll("[data-remove-feetype]").forEach((btn) => {
+      btn.addEventListener("click", () => removeFeeType(btn.dataset.removeFeetype));
+    });
+    list.querySelectorAll("[data-rename-feetype]").forEach((btn) => {
+      btn.addEventListener("click", () => openRenameFeeTypeModal(btn.dataset.renameFeetype));
+    });
+  }
+
+  function removeFeeType(id) {
+    const ft = state.settings.feeTypes.find((f) => f.id === id);
+    if (!ft) return;
+    const affected = countStudentsWithChargeFor(state, id);
+    const proceed = affected > 0
+      ? confirm(
+          `${affected} pelajar sudah mempunyai caj direkodkan untuk "${ft.name}". ` +
+          `Membuang jenis ini akan menyembunyikannya daripada senarai aktif dan borang caj baharu — ` +
+          `rekod sedia ada pelajar TIDAK akan dipadam. Teruskan?`
+        )
+      : confirm(`Buang jenis yuran "${ft.name}" daripada senarai?`);
+    if (!proceed) return;
+    state.settings.feeTypes = state.settings.feeTypes.filter((f) => f.id !== id);
+    // Note: we deliberately do NOT touch any student's existing ledger
+    // entries under this feeTypeId — see getFeeTypeName()'s fallback.
+    persist();
+    renderFeeTypeChips();
+    showToast(`Jenis yuran "${ft.name}" dibuang daripada senarai aktif.`);
+  }
+
+  function openRenameFeeTypeModal(id) {
+    const ft = state.settings.feeTypes.find((f) => f.id === id);
+    if (!ft) return;
+    openModal(`
+      <div class="modal__head">
+        <h2>Namakan Semula Jenis Yuran</h2>
+        <button class="modal__close" type="button" data-close>&times;</button>
+      </div>
+      <div class="field">
+        <label for="rename-feetype-input">Nama</label>
+        <input type="text" id="rename-feetype-input" value="${escapeHtml(ft.name)}">
+      </div>
+      <div class="modal__actions">
+        <button class="btn btn--ghost btn--small" type="button" data-close style="color:var(--ink); border-color: rgba(43,35,24,0.2);">Batal</button>
+        <button class="btn btn--small" type="button" id="btn-save-feetype-rename">Simpan</button>
+      </div>
+    `);
+    modalRoot.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeModal));
+    const input = document.getElementById("rename-feetype-input");
+    input.focus();
+    input.select();
+    document.getElementById("btn-save-feetype-rename").addEventListener("click", () => {
+      const name = input.value.trim();
+      if (!name) { alert("Sila masukkan nama yang sah."); return; }
+      if (state.settings.feeTypes.some((f) => f.id !== id && f.name.toLowerCase() === name.toLowerCase())) {
+        alert("Jenis yuran ini sudah ada dalam senarai.");
+        return;
+      }
+      ft.name = name;
+      persist();
+      renderFeeTypeChips();
+      if (FEATURES.finance) renderYuranPanel();
+      closeModal();
+      showToast("Jenis yuran dikemaskini.");
+    });
   }
 
   // Built and inserted only when FEATURES.finance is true — this

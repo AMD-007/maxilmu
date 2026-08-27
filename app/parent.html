@@ -218,27 +218,63 @@
     mount.className = "card";
     mount.id = "yuran-mount";
     document.querySelector(".portal-main").appendChild(mount);
+
     const balance = getStudentBalance(student);
-    const waText = encodeURIComponent(`Assalamualaikum, saya ibu bapa kepada ${student.name} (${student.className}). Saya ingin bertanya mengenai baki yuran.`);
+    const breakdown = getFeeBreakdown(state, student);
+    const outstandingTypes = breakdown.filter((b) => b.outstanding > 0);
+
+    // Judgment call: when there's nothing owed, the WhatsApp button is
+    // dropped along with the balance headline — there's nothing left to
+    // inquire about. The ledger history toggle stays either way, since
+    // a parent may still want to see past transactions at RM0.
+    const waButton = balance > 0 ? (() => {
+      const owedList = outstandingTypes.map((b) => `${b.name} ${formatMoney(b.outstanding)}`).join(", ");
+      const waText = encodeURIComponent(`Assalamualaikum, saya ibu bapa kepada ${student.name} (${student.className}). Baki tertunggak: ${owedList}.`);
+      return `<a class="btn btn--small" href="https://wa.me/${state.settings.adminContactNumber}?text=${waText}" target="_blank" rel="noopener">Hubungi Admin Tentang Yuran</a>`;
+    })() : "";
+
+    const balanceBlock = balance <= 0 ? `
+      <p class="fee-clear">Tiada baki tertunggak.</p>
+    ` : `
+      <div class="fee-balance">
+        <span class="fee-balance__label">Jumlah Tertunggak</span>
+        <div class="fee-balance__value">${formatMoney(balance)}</div>
+      </div>
+      <div class="fee-breakdown">
+        ${breakdown.map((b) => {
+          const noteSuffix = b.outstanding > 0 && b.notes.size === 1 ? ` · ${escapeHtml([...b.notes][0])}` : "";
+          return `
+            <div class="fee-breakdown__row">
+              <span class="fee-breakdown__name">${escapeHtml(b.name)}${noteSuffix}</span>
+              <span class="fee-breakdown__amount ${b.outstanding > 0 ? "is-outstanding" : "is-clear"}">${b.outstanding > 0 ? formatMoney(b.outstanding) : "✓ Selesai"}</span>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
+
     mount.innerHTML = `
       <h2>Yuran</h2>
-      <p class="card__hint">Baki semasa: <strong>${formatMoney(balance)}</strong></p>
-      <div class="table-wrap" style="margin-bottom:1rem;">
-        ${student.fees.ledger.length ? `
-          <table class="data-table">
-            <thead><tr><th>Tarikh</th><th>Perkara</th><th>Jumlah</th></tr></thead>
-            <tbody>
-              ${student.fees.ledger.slice().sort((a, b) => a.date.localeCompare(b.date)).map((entry) => `
-                <tr>
-                  <td>${formatDate(entry.date)}</td>
-                  <td>${escapeHtml(entry.description)}</td>
-                  <td>${entry.type === "charge" ? "+" : "-"}${formatMoney(entry.amount)}</td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>` : '<p class="empty-note">Tiada rekod yuran lagi.</p>'}
-      </div>
-      <a class="btn btn--small" href="https://wa.me/${state.settings.adminContactNumber}?text=${waText}" target="_blank" rel="noopener">Hubungi Admin Tentang Yuran</a>
+      ${balanceBlock}
+      ${waButton}
+      <details class="fee-history">
+        <summary><span class="fee-history__chevron" aria-hidden="true">▾</span> Sejarah Yuran</summary>
+        <div class="table-wrap" style="margin-top:0.8rem;">
+          ${student.fees.ledger.length ? `
+            <table class="data-table">
+              <thead><tr><th>Tarikh</th><th>Perkara</th><th>Jumlah</th></tr></thead>
+              <tbody>
+                ${student.fees.ledger.slice().sort((a, b) => a.date.localeCompare(b.date)).map((entry) => `
+                  <tr>
+                    <td>${formatDate(entry.date)}</td>
+                    <td>${escapeHtml(feeEntryLabel(state, entry))}</td>
+                    <td>${entry.type === "charge" ? "+" : "-"}${formatMoney(entry.amount)}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>` : '<p class="empty-note">Tiada rekod yuran lagi.</p>'}
+        </div>
+      </details>
     `;
   }
 })();
