@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .forEach((student) => {
       const opt = document.createElement("option");
       opt.value = student.id;
-      opt.textContent = `${student.name} (${student.className})`;
+      opt.textContent = `${studentDisplayName(student)} (${student.className})`;
       select.appendChild(opt);
     });
 

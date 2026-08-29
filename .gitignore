@@ -1,0 +1,17 @@
+# Local tooling
+.claude/
+.playwright-mcp/
+
+# Scratch / design drafts, not part of the live site
+index (1).html
+
+# Ad-hoc screenshots and test-run captures
+Screenshot *.png
+ss1.png
+ss2.png
+index-desktop-full.png
+index-mobile-full.png
+index-mobile-top.png
+
+# Unused legacy asset
+logoMDA.png

@@ -50,6 +50,11 @@ const SITE_CONFIG = {
     gold: "#B8934A",
     goldInk: "#816734",
     goldSoft: "#CBAE73",
+    parchment: "#F6F0E4",
+    parchmentDim: "#EEE4CE",
+    parchmentDeep: "#E7DABF",
+    ink: "#2B2318",
+    inkSoft: "#6B6152",
   },
 };
 
@@ -72,6 +77,11 @@ const SITE_CONFIG_BASE = document.currentScript.src.replace(/site-config\.js(\?.
   root.setProperty("--gold", c.gold);
   root.setProperty("--gold-ink", c.goldInk);
   root.setProperty("--gold-soft", c.goldSoft);
+  root.setProperty("--parchment", c.parchment);
+  root.setProperty("--parchment-dim", c.parchmentDim);
+  root.setProperty("--parchment-deep", c.parchmentDeep);
+  root.setProperty("--ink", c.ink);
+  root.setProperty("--ink-soft", c.inkSoft);
 })();
 
 // Generic hooks used across all 5 pages:

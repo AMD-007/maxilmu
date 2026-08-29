@@ -1,9 +1,4 @@
 /* ================================================================
-   index.css — styles for index.html ONLY.
-   Deliberately separate from styles.css/app.css: those are shared
-   with the login/admin/parent portal pages, and this page's classes
-   (.hero, .page, .ledger, .spread, etc.) don't exist there.
-
    DESIGN PLAN (kept as comments so this survives hand-off intact)
 
    Signature idea: the page is a physical, opened kitab, not a
@@ -17,13 +12,19 @@
    colophon, the traditional place a manuscript records who made it
    and where to find them.
 
-   Palette (unchanged from the existing brand, used more decisively):
-   teal #1B6B62, indigo #2A2F5C, malachite #3D7A5C, gold #B8934A,
-   parchment #F6F0E4, ink #2B2318. Overridable per madrasah via the
-   CSS custom properties below — see SITE_CONFIG.colors in
-   site-config.js, which sets these at runtime.
+   Palette below is the FALLBACK only — site-config.js overrides
+   these custom properties on :root at runtime (see applyThemeColors
+   there), so a different madrasah customer can reskin the accent
+   palette by editing SITE_CONFIG.colors alone, without touching this
+   file. Values here just keep the page looking right if that script
+   ever fails to load.
    Type: Fraunces (display), Amiri (Arabic + numeral accents),
    Public Sans (body/UI).
+
+   This file is index.html-only — kept deliberately separate from
+   styles.css/app.css (shared by login/admin/parent), since none of
+   these selectors (.hero, .page, .ledger, .spread, etc.) are used
+   outside this one page.
 ================================================================= */
 :root{
   --teal:#1B6B62; --indigo:#2A2F5C; --malachite:#3D7A5C; --malachite-ink:#376E53;
@@ -32,11 +33,6 @@
   --ink:#2B2318; --ink-soft:#6B6152; --on-indigo:#EFE9D8;
   --font-display:"Fraunces","Georgia",serif;
   --font-arabic:"Amiri",serif;
-  /* More ornamental calligraphic face, reserved for the short crest
-     inscriptions (hero + footer) — Amiri stays on the longer hadith
-     quote in the marginalia, where diacritic legibility matters more
-     than decorative flourish. */
-  --font-arabic-display:"Aref Ruqaa","Amiri",serif;
   --font-body:"Public Sans","Segoe UI",sans-serif;
 }
 *{box-sizing:border-box;}
@@ -56,7 +52,7 @@ a:focus-visible, button:focus-visible{outline:3px solid var(--teal); outline-off
   border-bottom:1px solid rgba(43,35,24,.08); transform:translateY(-100%); transition:transform .35s ease;}
 .mini-header.is-visible{transform:translateY(0);}
 .mini-header__brand{display:flex;align-items:center;gap:.5rem;text-decoration:none;color:var(--ink);font-family:var(--font-display);font-weight:600;}
-.mini-header__brand img{width:30px;height:30px;border-radius:50%;object-fit:cover;transform:scale(1.3);}
+.mini-header__brand img{width:30px;height:30px;border-radius:50%;object-fit:cover;}
 .mini-header__cta{background:var(--teal);color:#fff;padding:.5rem 1rem;border-radius:99px;text-decoration:none;font-size:.85rem;font-weight:700;}
 
 /* =================================================================
@@ -72,13 +68,13 @@ a:focus-visible, button:focus-visible{outline:3px solid var(--teal); outline-off
   box-shadow:0 22px 40px -18px rgba(20,14,6,.55), 0 2px 0 rgba(184,147,74,.5) inset;
   transform:rotate(-1.1deg); max-width:26rem;}
 @media (min-width:640px){.hero__label{margin:0 0 3.2rem 3.2rem;}}
-@media (min-width:900px){.hero__label{margin:0 0 4.4rem 5.5rem;padding:2.4rem 2.4rem 2rem;max-width:33rem;}}
+@media (min-width:900px){.hero__label{margin:0 0 4.4rem 5.5rem;padding:2.4rem 2.4rem 2rem;max-width:29rem;}}
 .hero__label::before{content:"";position:absolute;inset:0;pointer-events:none;
   border:1px solid rgba(184,147,74,.55); margin:8px;}
-.hero__mark{display:block;width:56px;height:56px;border-radius:50%;overflow:hidden;margin-bottom:.9rem;
+.hero__mark{width:46px;height:46px;border-radius:50%;overflow:hidden;margin-bottom:.9rem;
   box-shadow:0 0 0 2px var(--parchment), 0 0 0 3px var(--gold-soft);}
-.hero__mark img{width:100%;height:100%;object-fit:cover;transform:scale(1.3);}
-.hero__arabic{font-family:var(--font-arabic-display);font-weight:700;color:var(--malachite-ink);font-size:1.3rem;margin:0 0 .3rem;}
+.hero__mark img{width:100%;height:100%;object-fit:cover;}
+.hero__arabic{font-family:var(--font-arabic);color:var(--malachite-ink);font-size:1.15rem;margin:0 0 .3rem;}
 .hero__name{font-family:var(--font-display);font-weight:600;font-size:clamp(1.9rem,4.6vw,2.9rem);line-height:1.05;margin:0 0 .5rem;color:var(--ink);}
 .hero__mission{margin:0 0 .9rem;color:var(--ink-soft);font-size:.98rem;max-width:24ch;}
 .hero__tag{display:inline-flex;align-items:center;gap:.4rem;font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--malachite-ink);}
@@ -159,9 +155,9 @@ a:focus-visible, button:focus-visible{outline:3px solid var(--teal); outline-off
 .rhythm{list-style:none;margin:0;padding:0;border-top:1px solid var(--parchment-deep);}
 .rhythm li{display:flex;gap:1rem;padding:.55rem 0;border-bottom:1px solid var(--parchment-deep);font-size:.92rem;}
 .rhythm .time{flex:0 0 6.2rem;font-weight:700;color:var(--malachite-ink);font-family:var(--font-display);font-style:italic;}
-.index-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:.15rem 1.2rem;border-top:1px solid var(--parchment-deep);padding-top:.7rem;text-align:center;}
-.index-list li{display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.4rem 0;font-size:.92rem;}
-.index-list li::before{content:"";width:5px;height:5px;background:var(--gold);border-radius:50%;flex-shrink:0;}
+.index-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:.15rem 1.2rem;border-top:1px solid var(--parchment-deep);padding-top:.7rem;}
+.index-list li{padding:.4rem 0;font-size:.92rem;position:relative;padding-left:1rem;}
+.index-list li::before{content:"";position:absolute;left:0;top:.85em;width:5px;height:5px;background:var(--gold);border-radius:50%;}
 
 /* =================================================================
    MAXILMU — a ledger page tucked into the book at an angle, not a
@@ -230,8 +226,8 @@ address{font-style:normal;color:var(--ink-soft);margin:0 0 .6rem;line-height:1.5
 .form__note{font-size:.75rem;color:var(--ink-soft);margin:.2rem 0 0;}
 
 .footer{background:var(--ink);color:var(--on-indigo);text-align:center;padding:2.6rem 1.5rem 2rem;font-size:.85rem;}
-.footer__mark{display:block;width:48px;height:48px;border-radius:50%;overflow:hidden;margin:0 auto .8rem;}
-.footer__mark img{width:100%;height:100%;object-fit:cover;transform:scale(1.3);}
+.footer__mark{width:40px;height:40px;border-radius:50%;overflow:hidden;margin:0 auto .8rem;}
+.footer__mark img{width:100%;height:100%;object-fit:cover;}
+.footer__ar{font-family:var(--font-arabic);color:var(--gold-soft);margin:0 0 .3rem;}
 .footer p{margin:.15rem 0;color:#B9B6C9;}
-.footer__ar{font-family:var(--font-arabic-display);font-weight:700;font-size:1.2rem;color:var(--gold-soft) !important;margin:0 0 .3rem;}
 .footer__credit{color:var(--gold-soft) !important;font-size:.75rem;letter-spacing:.03em;margin-top:.6rem !important;}

@@ -1,0 +1,14 @@
+# Custom 404 page (Apache/XAMPP). Requires AllowOverride to include
+# FileInfo (or All) for this directory in httpd.conf — XAMPP's default
+# config already allows this for htdocs.
+#
+# NOTE: this path assumes the site is deployed at its own domain root
+# (production docroot = this folder), which is the standard setup for
+# a real hosting deployment. If you're testing locally through a
+# subfolder URL instead — e.g. http://localhost/Maahad_Baitur_Rahman/ —
+# Apache resolves a leading-slash ErrorDocument path against the
+# *server's* DocumentRoot, not this folder, so this line will 404 on
+# the 404 page itself in that context. Swap it for the commented line
+# below when testing that way.
+ErrorDocument 404 /404.html
+# ErrorDocument 404 /Maahad_Baitur_Rahman/404.html

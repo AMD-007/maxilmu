@@ -121,8 +121,15 @@
   `;
 
   // ── Keputusan Peperiksaan — subjects x 3 fixed exam sittings ────
+  // Always the CURRENT academic year's record (see getCurrentExamRecord
+  // in data.js) — Tier 1 has no year picker yet, so this is exactly
+  // what "this student's results" means for now. Falls back to an
+  // empty marks shape rather than crashing if a student somehow has
+  // no current-year record yet.
+  const currentExamRecord = getCurrentExamRecord(student);
+  const currentMarks = currentExamRecord ? currentExamRecord.marks : { awal: {}, pertengahan: {}, akhir: {} };
   const activeSubjects = state.settings.subjects.filter((subj) =>
-    EXAM_PERIODS.some((exam) => Object.prototype.hasOwnProperty.call(student.exams[exam.key], subj))
+    EXAM_PERIODS.some((exam) => Object.prototype.hasOwnProperty.call(currentMarks[exam.key], subj))
   );
   const resultsWrap = document.getElementById("results-table-wrap");
   if (!activeSubjects.length) {
@@ -130,7 +137,7 @@
   } else {
     const bodyRows = activeSubjects.map((subj) => {
       const cells = EXAM_PERIODS.map((exam) => {
-        const val = student.exams[exam.key][subj];
+        const val = currentMarks[exam.key][subj];
         return `<td data-label="${exam.label}">${typeof val === "number" ? val + "%" : '<span class="cell-muted">—</span>'}</td>`;
       }).join("");
       return `<tr><td data-label="Subjek">${escapeHtml(subj)}</td>${cells}</tr>`;

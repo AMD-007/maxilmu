@@ -48,6 +48,11 @@
 
     <div class="stat-grid" id="dashboard-stats"></div>
 
+    <label class="checkbox-field" style="margin-bottom: var(--space-s);">
+      <input type="checkbox" id="toggle-show-inactive">
+      Tunjuk Pelajar Tidak Aktif
+    </label>
+
     <div class="table-wrap">
       <table class="data-table stack-table">
         <thead>
@@ -186,7 +191,7 @@
             <label for="attendance-target-input">Sasaran (%)</label>
             <input type="number" id="attendance-target-input" min="1" max="100" step="1">
           </div>
-          <button class="btn btn--secondary btn--small" id="btn-save-attendance" type="button">Simpan</button>
+          <button class="btn btn--secondary btn--small" id="btn-save-attendance-target" type="button">Simpan</button>
         </div>
       </div>
 
@@ -289,8 +294,11 @@
     // Kehadiran" (see the Kehadiran section below) — leaving the tab
     // silently would discard them, so guard the same way switching
     // class/date within that sub-tab already does.
-    if (typeof isAmbilDirty === "function" && isAmbilDirty() && !confirm("Ada perubahan belum disimpan untuk kelas/tarikh semasa. Tukar tanpa menyimpan?")) {
-      return;
+    if (typeof isAmbilDirty === "function" && isAmbilDirty()) {
+      if (!confirm("Ada perubahan belum disimpan untuk kelas/tarikh semasa. Tukar tanpa menyimpan?")) return;
+      // User chose to discard — clear the flag so it doesn't keep
+      // firing on every later navigation for edits already abandoned.
+      clearAmbilDirty();
     }
     tabsNav.querySelectorAll(".portal-tabs__btn").forEach((btn) => btn.classList.toggle("is-active", btn.dataset.tab === tabName));
     document.querySelectorAll(".portal-panel").forEach((panel) => { panel.hidden = panel.dataset.panel !== tabName; });
@@ -307,7 +315,10 @@
   // ================================================================
   function renderDashboardStats() {
     const mount = document.getElementById("dashboard-stats");
-    const students = state.students;
+    // Aktif students only — the dashboard is "the school today," and
+    // an inactive student's old numbers shouldn't dilute a currently-
+    // enrolled average or inflate the headline student count.
+    const students = state.students.filter((s) => s.status === "aktif");
     const total = students.length;
     const attendanceTarget = state.settings.attendance.target;
     const latestAttendances = students.map((s) => getLatestAttendanceEntry(s)).filter(Boolean);
@@ -348,14 +359,18 @@
     const unit = state.settings.hafazan.unit;
     const hafazanTarget = state.settings.hafazan.total;
     document.getElementById("hafazan-col-head").textContent = `Hafazan (${hafazanUnitLabel(unit, 2)})`;
-    document.getElementById("student-count-meta").textContent = `${state.students.length} pelajar`;
+
+    const showInactive = document.getElementById("toggle-show-inactive").checked;
+    const visibleStudents = state.students.filter((s) => showInactive || s.status === "aktif");
+    document.getElementById("student-count-meta").textContent = `${visibleStudents.length} pelajar`;
 
     const body = document.getElementById("student-table-body");
     body.innerHTML = "";
-    state.students
+    visibleStudents
       .slice()
       .sort((a, b) => a.name.localeCompare(b.name))
       .forEach((student) => {
+        const isInactive = student.status !== "aktif";
         const examCells = EXAM_PERIODS.map((exam) => {
           const avg = examAverage(state, student, exam.key);
           return `<td data-label="${exam.label}">${avg === null ? '<span class="cell-muted">—</span>' : avg + "%"}</td>`;
@@ -366,8 +381,9 @@
         const attendancePct = latestAttendance ? Math.min(100, latestAttendance.rate) : 0;
 
         const tr = document.createElement("tr");
+        if (isInactive) tr.className = "is-inactive-row";
         tr.innerHTML = `
-          <td data-label="Nama">${escapeHtml(student.name)}</td>
+          <td data-label="Nama">${escapeHtml(student.name)}${isInactive ? ` <span class="pill pill--inactive">${escapeHtml(STUDENT_STATUSES[student.status].label)}</span>` : ""}</td>
           <td data-label="Kelas">${escapeHtml(student.className)}</td>
           ${examCells}
           <td data-label="Kehadiran">
@@ -382,6 +398,7 @@
             <button class="btn btn--secondary btn--small" data-edit-results="${student.id}" type="button">Keputusan</button>
             <button class="btn btn--secondary btn--small" data-edit-attendance="${student.id}" type="button">Kehadiran</button>
             <button class="btn btn--secondary btn--small" data-edit-hafazan="${student.id}" type="button">Hafazan</button>
+            <button class="btn btn--secondary btn--small" data-edit-status="${student.id}" type="button">Status</button>
           </td>
         `;
         body.appendChild(tr);
@@ -396,6 +413,135 @@
     body.querySelectorAll("[data-edit-hafazan]").forEach((btn) => {
       btn.addEventListener("click", () => openHafazanModal(btn.dataset.editHafazan));
     });
+    body.querySelectorAll("[data-edit-status]").forEach((btn) => {
+      btn.addEventListener("click", () => openStudentStatusModal(btn.dataset.editStatus));
+    });
+  }
+
+  document.getElementById("toggle-show-inactive").addEventListener("change", renderStudentTable);
+
+  // ================================================================
+  // STATUS PELAJAR — aktif/tidak-aktif, never a raw delete for a
+  // student with any history (see studentHasAnyRecords() in data.js).
+  // Deactivating keeps every mark/attendance/hafazan/fee record
+  // exactly as-is; it only changes which lists the student shows up
+  // in by default (roster, Ambil Kehadiran, bulk charge — see their
+  // own comments for which ones filter and why).
+  // ================================================================
+  function openStudentStatusModal(studentId) {
+    const student = getStudent(state, studentId);
+    if (!student) return;
+
+    function bodyHtml() {
+      const isAktif = student.status === "aktif";
+      const hasRecords = studentHasAnyRecords(student);
+      return `
+        <p class="card__hint">
+          Status semasa:
+          <strong>${escapeHtml(STUDENT_STATUSES[student.status].label)}</strong>
+          ${!isAktif && student.statusReason ? ` — ${escapeHtml(student.statusReason)}` : ""}
+        </p>
+        ${isAktif ? `
+          <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Tandakan Tidak Aktif</h3>
+          <div class="field">
+            <label for="status-reason-select">Sebab</label>
+            <select id="status-reason-select">
+              ${STUDENT_INACTIVE_REASONS.map((r) => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join("")}
+              <option value="__custom__">Lain-lain</option>
+            </select>
+          </div>
+          <div class="field" id="status-reason-custom-field" hidden>
+            <label for="status-reason-custom-input">Nyatakan sebab</label>
+            <input type="text" id="status-reason-custom-input" placeholder="Cth: Bertukar madrasah">
+          </div>
+          <button class="btn btn--secondary btn--small" id="btn-deactivate-student" type="button">Tandakan Tidak Aktif</button>
+        ` : `
+          <button class="btn btn--secondary btn--small" id="btn-reactivate-student" type="button">Aktifkan Semula</button>
+        `}
+        ${!hasRecords ? `
+          <div class="card danger-zone" style="margin-top: var(--space-m);">
+            <h2>Padam Pelajar</h2>
+            <p class="card__hint">Pelajar ini tiada sebarang rekod (markah, kehadiran, hafazan, yuran) — sesuai untuk kesilapan kemasukan data. Tindakan ini tidak boleh dibatalkan.</p>
+            <button class="btn btn--danger btn--small" id="btn-delete-student" type="button">Padam Pelajar</button>
+          </div>
+        ` : `
+          <p class="empty-note" style="margin-top: var(--space-m);">Pelajar ini mempunyai rekod sedia ada, jadi tiada pilihan padam — hanya status aktif/tidak aktif boleh diubah.</p>
+        `}
+      `;
+    }
+
+    function renderModalBody() {
+      modalRoot.querySelector("#status-modal-body").innerHTML = bodyHtml();
+
+      const reasonSelect = document.getElementById("status-reason-select");
+      if (reasonSelect) {
+        reasonSelect.addEventListener("change", () => {
+          document.getElementById("status-reason-custom-field").hidden = reasonSelect.value !== "__custom__";
+        });
+      }
+
+      const deactivateBtn = document.getElementById("btn-deactivate-student");
+      if (deactivateBtn) {
+        deactivateBtn.addEventListener("click", () => {
+          const selected = document.getElementById("status-reason-select").value;
+          const reason = selected === "__custom__"
+            ? document.getElementById("status-reason-custom-input").value.trim()
+            : selected;
+          if (!reason) {
+            alert("Sila nyatakan sebab.");
+            return;
+          }
+          student.status = "tidak-aktif";
+          student.statusReason = reason;
+          persist();
+          renderModalBody();
+          renderStudentTable();
+          renderDashboardStats();
+          showToast(`${student.name} ditandakan Tidak Aktif.`);
+        });
+      }
+
+      const reactivateBtn = document.getElementById("btn-reactivate-student");
+      if (reactivateBtn) {
+        reactivateBtn.addEventListener("click", () => {
+          student.status = "aktif";
+          student.statusReason = "";
+          persist();
+          renderModalBody();
+          renderStudentTable();
+          renderDashboardStats();
+          showToast(`${student.name} diaktifkan semula.`);
+        });
+      }
+
+      const deleteBtn = document.getElementById("btn-delete-student");
+      if (deleteBtn) {
+        deleteBtn.addEventListener("click", () => {
+          const ok = confirm(`Padam ${student.name} sepenuhnya? Tindakan ini tidak boleh dibatalkan.`);
+          if (!ok) return;
+          state.students = state.students.filter((s) => s.id !== student.id);
+          persist();
+          closeModal();
+          renderStudentTable();
+          renderDashboardStats();
+          showToast(`${student.name} dipadam.`);
+        });
+      }
+    }
+
+    openModal(`
+      <div class="modal__head">
+        <h2>Status — ${escapeHtml(student.name)}</h2>
+        <button class="modal__close" type="button" data-close>&times;</button>
+      </div>
+      <p class="card__hint">${escapeHtml(student.className)}</p>
+      <div id="status-modal-body"></div>
+      <div class="modal__actions">
+        <button class="btn btn--small" type="button" data-close>Selesai</button>
+      </div>
+    `);
+    modalRoot.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeModal));
+    renderModalBody();
   }
 
   // ================================================================
@@ -407,12 +553,17 @@
   function openResultsModal(studentId) {
     const student = getStudent(state, studentId);
     if (!student) return;
+    // Always the CURRENT academic year's record — Tier 1 has no UI to
+    // browse or edit a past year (that's a later tier); created on
+    // demand so a student with no marks yet still has somewhere to
+    // write into.
+    const record = ensureCurrentExamRecord(student);
 
     const subjects = state.settings.subjects;
     const rows = subjects.map((subj) => {
       const safeId = subj.replace(/[^a-z0-9]/gi, "_");
       const cells = EXAM_PERIODS.map((exam) => {
-        const val = Object.prototype.hasOwnProperty.call(student.exams[exam.key], subj) ? student.exams[exam.key][subj] : "";
+        const val = Object.prototype.hasOwnProperty.call(record.marks[exam.key], subj) ? record.marks[exam.key][subj] : "";
         return `<td><input type="number" min="0" max="100" class="mark-cell-input" id="mark_${exam.key}_${safeId}" data-exam="${exam.key}" data-subject="${escapeHtml(subj)}" value="${val}"></td>`;
       }).join("");
       return `
@@ -469,8 +620,8 @@
       modalRoot.querySelectorAll("input[data-subject]").forEach((input) => {
         const examKey = input.dataset.exam;
         const subj = input.dataset.subject;
-        if (input.value === "") { delete student.exams[examKey][subj]; return; }
-        student.exams[examKey][subj] = Math.max(0, Math.min(100, Number(input.value)));
+        if (input.value === "") { delete record.marks[examKey][subj]; return; }
+        record.marks[examKey][subj] = Math.max(0, Math.min(100, Number(input.value)));
       });
       persist();
       renderStudentTable();
@@ -566,7 +717,7 @@
           alert("Sila isi tarikh dan jumlah tambahan yang sah.");
           return;
         }
-        student.hafazanLog.push({ id: uid("h"), date, amount, note });
+        student.hafazanLog.push({ id: uid("h"), date, amount, note, ...snapshotFields(student) });
         persist();
         renderModalBody();
         renderStudentTable();
@@ -682,7 +833,12 @@
   // corrects them (admin-facing register grid + inline Bersurat).
   // Replaces the old standalone attendance.html / bersurat.html pages.
   // ================================================================
-  const kehadiranClasses = getClassList(state);
+  // Aktif-only classes for Ambil Kehadiran's picker (new records —
+  // see ambilClassStudents below). Rekod & Semakan needs every class
+  // regardless of status, since a class that's since gone all-inactive
+  // must still be reachable to review/correct its history.
+  const ambilClasses = getClassList(state);
+  const semakanClasses = getClassList(state, true);
 
   // ---- sub-tab switching ------------------------------------------
   const subtabsNav = document.getElementById("kehadiran-subtabs");
@@ -692,8 +848,11 @@
     return subtabsNav.querySelector('[data-subtab="ambil"]').classList.contains("is-active");
   }
   function activateSubtab(name) {
-    if (name !== "ambil" && isAmbilDirty() && !confirm("Ada perubahan belum disimpan untuk kelas/tarikh semasa. Tukar tanpa menyimpan?")) {
-      return;
+    if (name !== "ambil" && isAmbilDirty()) {
+      if (!confirm("Ada perubahan belum disimpan untuk kelas/tarikh semasa. Tukar tanpa menyimpan?")) return;
+      // User chose to discard — clear the flag so it doesn't keep
+      // firing on every later navigation for edits already abandoned.
+      clearAmbilDirty();
     }
     subtabsNav.querySelectorAll(".subtabs__btn").forEach((btn) => btn.classList.toggle("is-active", btn.dataset.subtab === name));
     document.querySelectorAll(".subpanel").forEach((panel) => { panel.hidden = panel.dataset.subpanel !== name; });
@@ -716,7 +875,7 @@
   const ambilEmptyNote = document.getElementById("ambil-empty");
   const ambilCountMeta = document.getElementById("ambil-count-meta");
 
-  kehadiranClasses.forEach((c) => {
+  ambilClasses.forEach((c) => {
     const opt = document.createElement("option");
     opt.value = c;
     opt.textContent = c;
@@ -733,9 +892,15 @@
   let ambilDirtyFlag = false;
 
   function isAmbilDirty() { return ambilDirtyFlag; }
+  function clearAmbilDirty() { ambilDirtyFlag = false; }
 
+  // Aktif-only: this is new-record creation, so an inactive student
+  // should never be a tap away from getting a fresh attendance row.
+  // Rekod & Semakan (below) deliberately does NOT filter this way —
+  // it's correction of EXISTING records, which must stay reachable
+  // for an inactive student too.
   function ambilClassStudents(className) {
-    return state.students.filter((s) => s.className === className).sort((a, b) => a.name.localeCompare(b.name));
+    return state.students.filter((s) => s.className === className && s.status === "aktif").sort((a, b) => a.name.localeCompare(b.name));
   }
 
   function loadAmbilDraft(className, date) {
@@ -827,7 +992,7 @@
     renderSemakanBadge();
   });
 
-  if (kehadiranClasses.length) loadAndRenderAmbil(ambilClassSelect.value, ambilDateInput.value);
+  if (ambilClasses.length) loadAndRenderAmbil(ambilClassSelect.value, ambilDateInput.value);
   else ambilEmptyNote.hidden = false;
 
   // ---- Rekod & Semakan (Tab 2: register grid + inline correction) --
@@ -839,7 +1004,7 @@
   const semakanBadge = document.getElementById("semakan-badge");
   const cellPopover = document.getElementById("cell-popover");
 
-  kehadiranClasses.forEach((c) => {
+  semakanClasses.forEach((c) => {
     const opt = document.createElement("option");
     opt.value = c;
     opt.textContent = c;
@@ -856,6 +1021,10 @@
   }
   semakanMonthInput.value = latestAttendanceMonth();
 
+  // Deliberately NOT filtered to aktif students (unlike
+  // ambilClassStudents above) — this tab only ever corrects EXISTING
+  // records, never creates new ones, so an inactive student's past
+  // unresolved days must stay reachable here.
   function semakanClassStudents() {
     return state.students.filter((s) => s.className === semakanClassSelect.value).sort((a, b) => a.name.localeCompare(b.name));
   }
@@ -869,7 +1038,7 @@
   // time, so the badge tracks exactly what's on screen (or one tap
   // away via the "only unresolved" toggle), not the whole madrasah.
   function renderSemakanBadge() {
-    if (!kehadiranClasses.length) return;
+    if (!semakanClasses.length) return;
     const monthPrefix = semakanMonthInput.value;
     const count = semakanClassStudents().reduce((sum, s) => sum + unresolvedCountFor(s, monthPrefix), 0);
     semakanBadge.hidden = count === 0;
@@ -878,7 +1047,7 @@
 
   function renderRegisterGrid() {
     closeCellPopover();
-    if (!kehadiranClasses.length) return;
+    if (!semakanClasses.length) return;
     const monthPrefix = semakanMonthInput.value;
     let students = semakanClassStudents();
 
@@ -914,7 +1083,8 @@
         return `<td class="register-cell register-cell--${entry.status}${isUnresolved ? " is-unresolved" : ""}" ${attrs}
           title="${escapeHtml(s.name)} &middot; ${formatDate(d)} &middot; ${ATTENDANCE_STATUSES[entry.status].label}">${ATTENDANCE_STATUSES[entry.status].letter}</td>`;
       }).join("");
-      return `<tr><th class="register-name">${escapeHtml(s.name)}</th>${cells}</tr>`;
+      const inactiveBadge = s.status !== "aktif" ? ` <span class="pill pill--inactive">${escapeHtml(STUDENT_STATUSES[s.status].label)}</span>` : "";
+      return `<tr><th class="register-name">${escapeHtml(s.name)}${inactiveBadge}</th>${cells}</tr>`;
     }).join("");
 
     semakanTable.innerHTML = `
@@ -948,7 +1118,7 @@
 
     cellPopover.innerHTML = `
       <div class="cell-popover__head">
-        <strong>${escapeHtml(student.name)}</strong>
+        <strong>${escapeHtml(student.name)}${student.status !== "aktif" ? ` <span class="pill pill--inactive">${escapeHtml(STUDENT_STATUSES[student.status].label)}</span>` : ""}</strong>
         <span>${formatDate(date)}</span>
       </div>
       <div class="field">
@@ -1049,6 +1219,11 @@
       </div>
     `;
 
+    // Deliberately NOT filtered to aktif students — an inactive
+    // student can still owe money (or have paid history worth
+    // reviewing), and that must stay reachable. Only the bulk-charge
+    // action (new charges for a whole class) excludes them, since
+    // that's genuine new-record creation — see openBulkChargeModal.
     const body = document.getElementById("yuran-table-body");
     body.innerHTML = "";
     state.students
@@ -1056,9 +1231,11 @@
       .sort((a, b) => a.name.localeCompare(b.name))
       .forEach((student) => {
         const balance = getStudentBalance(student);
+        const isInactive = student.status !== "aktif";
         const tr = document.createElement("tr");
+        if (isInactive) tr.className = "is-inactive-row";
         tr.innerHTML = `
-          <td>${escapeHtml(student.name)}</td>
+          <td>${escapeHtml(student.name)}${isInactive ? ` <span class="pill pill--inactive">${escapeHtml(STUDENT_STATUSES[student.status].label)}</span>` : ""}</td>
           <td>${escapeHtml(student.className)}</td>
           <td><span class="pill ${balance > 0 ? "pill--owing" : "pill--clear"}">${formatMoney(balance)}</span></td>
           <td><button class="btn btn--secondary btn--small" data-ledger-student="${student.id}" type="button">Lihat Ledger</button></td>
@@ -1076,7 +1253,7 @@
   function openLedgerModal(studentId) {
     const student = getStudent(state, studentId);
     if (!student) return;
-    const feeTypes = state.settings.feeTypes;
+    const isAktif = student.status === "aktif";
 
     function ledgerRows() {
       if (!student.fees.ledger.length) return '<p class="empty-note">Tiada rekod yuran lagi.</p>';
@@ -1101,25 +1278,34 @@
         <div class="table-wrap" style="margin-bottom:1rem;">${ledgerRows()}</div>
 
         <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Tambah Caj</h3>
-        ${feeTypes.length ? `
-          <div class="inline-form">
-            <div class="field">
-              <label for="charge-feetype-select">Jenis Yuran</label>
-              <select id="charge-feetype-select">
-                ${feeTypes.map((ft) => `<option value="${ft.id}">${escapeHtml(ft.name)}</option>`).join("")}
-              </select>
+        ${(() => {
+          // Aktif-only: charging is new-record creation, the same risk
+          // category as Ambil Kehadiran / bulk charge. An inactive
+          // student's ledger stays fully viewable and can still take a
+          // payment (below) — it just can't grow a new charge.
+          if (!isAktif) return '<p class="empty-note">Pelajar tidak aktif — tiada caj baharu boleh ditambah.</p>';
+          const activeFeeTypes = getActiveFeeTypes(state);
+          if (!activeFeeTypes.length) return '<p class="empty-note">Tiada jenis yuran aktif dalam Tetapan lagi.</p>';
+          return `
+            <div class="inline-form">
+              <div class="field">
+                <label for="charge-feetype-select">Jenis Yuran</label>
+                <select id="charge-feetype-select">
+                  ${activeFeeTypes.map((ft) => `<option value="${ft.id}">${escapeHtml(ft.name)}</option>`).join("")}
+                </select>
+              </div>
+              <div class="field">
+                <label for="charge-amount-input">Jumlah (RM)</label>
+                <input type="number" min="0" step="0.01" id="charge-amount-input">
+              </div>
+              <div class="field" style="flex: 2 1 200px;">
+                <label for="charge-note-input">Catatan (pilihan)</label>
+                <input type="text" id="charge-note-input" placeholder="Cth: Ogos 2026">
+              </div>
+              <button class="btn btn--secondary btn--small" id="btn-add-charge" type="button">Tambah Caj</button>
             </div>
-            <div class="field">
-              <label for="charge-amount-input">Jumlah (RM)</label>
-              <input type="number" min="0" step="0.01" id="charge-amount-input">
-            </div>
-            <div class="field" style="flex: 2 1 200px;">
-              <label for="charge-note-input">Catatan (pilihan)</label>
-              <input type="text" id="charge-note-input" placeholder="Cth: Ogos 2026">
-            </div>
-            <button class="btn btn--secondary btn--small" id="btn-add-charge" type="button">Tambah Caj</button>
-          </div>
-        ` : '<p class="empty-note">Tiada jenis yuran dalam Tetapan lagi.</p>'}
+          `;
+        })()}
 
         <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Rekod Bayaran</h3>
         <div class="inline-form">
@@ -1145,7 +1331,7 @@
             alert("Sila pilih jenis yuran dan isi jumlah yang sah.");
             return;
           }
-          student.fees.ledger.push({ id: uid("f"), date: todayIso(), type: "charge", feeTypeId, amount, note });
+          student.fees.ledger.push({ id: uid("f"), date: todayIso(), type: "charge", feeTypeId, amount, note, ...snapshotFields(student) });
           persist();
           renderModalBody();
           renderYuranPanel();
@@ -1160,7 +1346,7 @@
           alert("Sila isi jumlah yang sah.");
           return;
         }
-        student.fees.ledger.push({ id: uid("f"), date: todayIso(), type: "payment", amount, note });
+        student.fees.ledger.push({ id: uid("f"), date: todayIso(), type: "payment", amount, note, ...snapshotFields(student) });
         persist();
         renderModalBody();
         renderYuranPanel();
@@ -1170,7 +1356,7 @@
 
     openModal(`
       <div class="modal__head">
-        <h2>Yuran — ${escapeHtml(student.name)}</h2>
+        <h2>Yuran — ${escapeHtml(student.name)}${student.status !== "aktif" ? ` <span class="pill pill--inactive">${escapeHtml(STUDENT_STATUSES[student.status].label)}</span>` : ""}</h2>
         <button class="modal__close" type="button" data-close>&times;</button>
       </div>
       <div id="ledger-modal-body"></div>
@@ -1190,9 +1376,9 @@
   // recorded one at a time in openLedgerModal above.
   function openBulkChargeModal() {
     const classes = getClassList(state);
-    const feeTypes = state.settings.feeTypes;
+    const feeTypes = getActiveFeeTypes(state);
     if (!feeTypes.length) {
-      alert("Sila tambah sekurang-kurangnya satu jenis yuran dalam Tetapan dahulu.");
+      alert("Sila tambah sekurang-kurangnya satu jenis yuran aktif dalam Tetapan dahulu.");
       return;
     }
     const bulananId = feeTypes.find((ft) => ft.name.toLowerCase() === "yuran bulanan")?.id || feeTypes[0].id;
@@ -1240,7 +1426,9 @@
         alert("Sila pilih jenis yuran dan isi jumlah yang sah.");
         return;
       }
-      const targets = state.students.filter((s) => !className || s.className === className);
+      // Aktif only — bulk-charging is new-record creation for a whole
+      // class at once, same risk category as Ambil Kehadiran.
+      const targets = state.students.filter((s) => s.status === "aktif" && (!className || s.className === className));
       if (!targets.length) {
         alert("Tiada pelajar sepadan dengan kelas yang dipilih.");
         return;
@@ -1250,7 +1438,7 @@
       if (!ok) return;
       const today = todayIso();
       targets.forEach((s) => {
-        s.fees.ledger.push({ id: uid("f"), date: today, type: "charge", feeTypeId, amount, note });
+        s.fees.ledger.push({ id: uid("f"), date: today, type: "charge", feeTypeId, amount, note, ...snapshotFields(s) });
       });
       persist();
       renderYuranPanel();
@@ -1305,7 +1493,7 @@
           alert("Jenis yuran ini sudah ada dalam senarai.");
           return;
         }
-        state.settings.feeTypes.push({ id: uid("ft"), name });
+        state.settings.feeTypes.push({ id: uid("ft"), name, status: "aktif" });
         persist();
         input.value = "";
         renderFeeTypeChips();
@@ -1324,40 +1512,80 @@
       return;
     }
     state.settings.feeTypes.forEach((ft) => {
+      const isInactive = ft.status !== "aktif";
       const chip = document.createElement("span");
-      chip.className = "chip";
+      chip.className = "chip" + (isInactive ? " is-inactive-row" : "");
+      // Zero-usage: a genuine mistake, so a real × (delete). Anything
+      // with existing charges can only be deactivated, never deleted
+      // — same rule as students (see studentHasAnyRecords). An already
+      // -inactive type gets "Aktifkan" instead of either.
+      const actionBtn = isInactive
+        ? `<button type="button" class="chip__reactivate" data-reactivate-feetype="${ft.id}">Aktifkan</button>`
+        : countStudentsWithChargeFor(state, ft.id) > 0
+          ? `<button type="button" class="chip__reactivate" data-deactivate-feetype="${ft.id}">Nyahaktifkan</button>`
+          : `<button type="button" data-remove-feetype="${ft.id}" aria-label="Buang ${escapeHtml(ft.name)}">&times;</button>`;
       chip.innerHTML = `
         <button type="button" class="chip__label" data-rename-feetype="${ft.id}">${escapeHtml(ft.name)}</button>
-        <button type="button" data-remove-feetype="${ft.id}" aria-label="Buang ${escapeHtml(ft.name)}">&times;</button>
+        ${isInactive ? '<span class="pill pill--inactive">Tidak Aktif</span>' : ""}
+        ${actionBtn}
       `;
       list.appendChild(chip);
     });
     list.querySelectorAll("[data-remove-feetype]").forEach((btn) => {
-      btn.addEventListener("click", () => removeFeeType(btn.dataset.removeFeetype));
+      btn.addEventListener("click", () => deleteFeeType(btn.dataset.removeFeetype));
+    });
+    list.querySelectorAll("[data-deactivate-feetype]").forEach((btn) => {
+      btn.addEventListener("click", () => deactivateFeeType(btn.dataset.deactivateFeetype));
+    });
+    list.querySelectorAll("[data-reactivate-feetype]").forEach((btn) => {
+      btn.addEventListener("click", () => reactivateFeeType(btn.dataset.reactivateFeetype));
     });
     list.querySelectorAll("[data-rename-feetype]").forEach((btn) => {
       btn.addEventListener("click", () => openRenameFeeTypeModal(btn.dataset.renameFeetype));
     });
   }
 
-  function removeFeeType(id) {
+  // Only ever reachable when countStudentsWithChargeFor is 0 (see
+  // renderFeeTypeChips) — a genuine data-entry mistake with nothing
+  // attached yet, same "delete only if zero usage" rule as students.
+  function deleteFeeType(id) {
+    const ft = state.settings.feeTypes.find((f) => f.id === id);
+    if (!ft) return;
+    const ok = confirm(`Padam jenis yuran "${ft.name}"? Tiada caj menggunakannya lagi, jadi tindakan ini boleh dilakukan terus.`);
+    if (!ok) return;
+    state.settings.feeTypes = state.settings.feeTypes.filter((f) => f.id !== id);
+    persist();
+    renderFeeTypeChips();
+    showToast(`Jenis yuran "${ft.name}" dipadam.`);
+  }
+
+  // For a type with existing charges — stays in settings (and every
+  // past ledger entry keeps resolving its name via getFeeTypeName()),
+  // just drops out of getActiveFeeTypes() so it can't be picked for a
+  // NEW charge.
+  function deactivateFeeType(id) {
     const ft = state.settings.feeTypes.find((f) => f.id === id);
     if (!ft) return;
     const affected = countStudentsWithChargeFor(state, id);
-    const proceed = affected > 0
-      ? confirm(
-          `${affected} pelajar sudah mempunyai caj direkodkan untuk "${ft.name}". ` +
-          `Membuang jenis ini akan menyembunyikannya daripada senarai aktif dan borang caj baharu — ` +
-          `rekod sedia ada pelajar TIDAK akan dipadam. Teruskan?`
-        )
-      : confirm(`Buang jenis yuran "${ft.name}" daripada senarai?`);
-    if (!proceed) return;
-    state.settings.feeTypes = state.settings.feeTypes.filter((f) => f.id !== id);
-    // Note: we deliberately do NOT touch any student's existing ledger
-    // entries under this feeTypeId — see getFeeTypeName()'s fallback.
+    const ok = confirm(
+      `${affected} pelajar sudah mempunyai caj direkodkan untuk "${ft.name}". ` +
+      `Menyahaktifkannya akan menyembunyikannya daripada borang caj baharu — ` +
+      `rekod sedia ada pelajar TIDAK akan terjejas. Teruskan?`
+    );
+    if (!ok) return;
+    ft.status = "tidak-aktif";
     persist();
     renderFeeTypeChips();
-    showToast(`Jenis yuran "${ft.name}" dibuang daripada senarai aktif.`);
+    showToast(`Jenis yuran "${ft.name}" dinyahaktifkan.`);
+  }
+
+  function reactivateFeeType(id) {
+    const ft = state.settings.feeTypes.find((f) => f.id === id);
+    if (!ft) return;
+    ft.status = "aktif";
+    persist();
+    renderFeeTypeChips();
+    showToast(`Jenis yuran "${ft.name}" diaktifkan semula.`);
   }
 
   function openRenameFeeTypeModal(id) {
@@ -1484,9 +1712,10 @@
     }
     if (!proceed) return;
     state.settings.subjects = state.settings.subjects.filter((s) => s !== name);
-    // Note: we deliberately do NOT touch student.exams[*][name] here — a
-    // student's historical mark under a removed subject is preserved,
-    // just no longer shown in the active results-entry grid.
+    // Note: we deliberately do NOT touch any student's examRecords
+    // marks for this subject here — a student's historical mark under
+    // a removed subject is preserved, just no longer shown in the
+    // active results-entry grid.
     persist();
     renderSubjectChips();
     renderStudentTable();
@@ -1507,7 +1736,7 @@
     showToast("Tetapan hafazan disimpan.");
   });
 
-  document.getElementById("btn-save-attendance").addEventListener("click", () => {
+  document.getElementById("btn-save-attendance-target").addEventListener("click", () => {
     const target = Number(document.getElementById("attendance-target-input").value);
     if (!target || target < 1 || target > 100) {
       alert("Sila masukkan sasaran yang sah (1-100).");

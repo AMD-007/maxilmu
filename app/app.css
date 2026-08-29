@@ -344,6 +344,14 @@
 }
 .pill--owing { background: rgba(156, 61, 38, 0.12); color: var(--error); }
 .pill--clear { background: rgba(61, 122, 92, 0.14); color: var(--malachite-ink); }
+.pill--inactive { background: rgba(43, 35, 24, 0.1); color: var(--ink-soft); }
+
+/* A visible-but-de-emphasized row for an inactive student revealed via
+   "Tunjuk Pelajar Tidak Aktif" (or already in the Yuran list, which
+   never filters them out) — legible, not hidden, just visually
+   secondary to the aktif rows around it. */
+.is-inactive-row { opacity: 0.6; }
+.is-inactive-row:hover { opacity: 0.85; }
 
 /* ---- Forms ------------------------------------------------------- */
 .field { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.85rem; }
@@ -404,6 +412,24 @@
   cursor: pointer;
 }
 .chip__label:hover { text-decoration: underline; }
+
+/* Deactivate/reactivate action on a chip (e.g. a fee type with
+   existing charges) — a text label, not the circular red "×" delete
+   button .chip button already styles, so it needs its own reset. */
+.chip__reactivate {
+  background: none;
+  border: 1px solid rgba(43, 35, 24, 0.2);
+  border-radius: 100px;
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 0.72rem;
+  line-height: 1;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.chip__reactivate:hover { background: rgba(43, 35, 24, 0.06); }
+
 .empty-note { font-size: 0.86rem; color: var(--ink-soft); font-style: italic; }
 
 /* ---- Modal --------------------------------------------------------- */
