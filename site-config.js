@@ -18,7 +18,7 @@ const SITE_CONFIG = {
   // site) and the separate parent-facing fee-inquiry number used only
   // inside the portal (app/parent.html Yuran section). Digits only,
   // country code first, e.g. Malaysia: 601XXXXXXXX.
-  whatsappNumber: "60123456789",
+  whatsappNumber: "60109464866",
   adminContactNumber: "60123456789",
 
   // "logo" is the transparent-background mark used everywhere it sits
