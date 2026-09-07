@@ -12,3 +12,19 @@
 # below when testing that way.
 ErrorDocument 404 /404.html
 # ErrorDocument 404 /Maahad_Baitur_Rahman/404.html
+
+# Short, memorable URL for the login page. Teachers/admin can bookmark
+# or be told "/login" instead of "/app/login.html". It's a real
+# redirect (not an internal rewrite) so login.html's existing relative
+# asset paths (../styles.css, app.css, data.js, etc.) keep resolving
+# correctly against the real /app/login.html URL.
+#
+# RewriteBase matters here: without it, mod_rewrite guesses the URL
+# prefix from the filesystem path, and that guess is only correct when
+# this folder IS the server's DocumentRoot (the production setup — see
+# note above). Same subfolder caveat as ErrorDocument above: swap the
+# RewriteBase line when testing at http://localhost/Maahad_Baitur_Rahman/.
+RewriteEngine On
+RewriteBase /
+# RewriteBase /Maahad_Baitur_Rahman/
+RewriteRule ^login/?$ app/login.html [R=302,L]

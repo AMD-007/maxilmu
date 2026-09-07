@@ -53,6 +53,8 @@ a:focus-visible, button:focus-visible{outline:3px solid var(--teal); outline-off
 .mini-header.is-visible{transform:translateY(0);}
 .mini-header__brand{display:flex;align-items:center;gap:.5rem;text-decoration:none;color:var(--ink);font-family:var(--font-display);font-weight:600;}
 .mini-header__brand img{width:30px;height:30px;border-radius:50%;object-fit:cover;}
+.mini-header__actions{display:flex;align-items:center;gap:.6rem;}
+.mini-header__login{color:var(--ink-soft);padding:.5rem 1rem;border-radius:99px;border:1.5px solid rgba(43,35,24,.18);text-decoration:none;font-size:.85rem;font-weight:700;}
 .mini-header__cta{background:var(--teal);color:#fff;padding:.5rem 1rem;border-radius:99px;text-decoration:none;font-size:.85rem;font-weight:700;}
 
 /* =================================================================
