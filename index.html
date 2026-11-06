@@ -27,6 +27,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Amiri:ital,wght@0,400;0,700;1,400&family=Public+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="index.css">
+<link rel="preload" href="images/hero-exterior.jpg" as="image">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
@@ -85,7 +86,7 @@
   <div class="spread">
     <article class="page page--left">
       <div class="page__photo">
-        <img src="images/hafazan-class.jpg" alt="Pelajar duduk bersila membaca mushaf semasa sesi tasmik hafazan">
+        <img src="images/hafazan-class.jpg" alt="Pelajar duduk bersila membaca mushaf semasa sesi tasmik hafazan" loading="lazy">
         <span class="page__numeral" aria-hidden="true">١</span>
       </div>
       <div class="page__photo-torn" aria-hidden="true"></div>
@@ -105,7 +106,7 @@
 
     <article class="page page--right">
       <div class="page__photo">
-        <img src="images/akademik-class.jpg" alt="Pelajar menulis di meja semasa kelas akademik, guru di hadapan papan putih">
+        <img src="images/akademik-class.jpg" alt="Pelajar menulis di meja semasa kelas akademik, guru di hadapan papan putih" loading="lazy">
         <span class="page__numeral" aria-hidden="true">٢</span>
       </div>
       <div class="page__photo-torn" aria-hidden="true"></div>
@@ -208,7 +209,7 @@
 </section>
 
 <footer class="footer">
-  <span class="footer__mark"><img src="logo-transparent.png" data-config-logo alt=""></span>
+  <span class="footer__mark"><img src="logo-transparent.png" data-config-logo alt="" loading="lazy"></span>
   <p class="footer__ar" lang="ar" dir="rtl" data-config="nameArabic">معهد نور العلم</p>
   <p><span data-config="name">Maahad Cahaya Ilmu</span> &middot; <span data-config="location">Kuala Terengganu</span></p>
   <p>&copy; 2026. Hak cipta terpelihara.</p>

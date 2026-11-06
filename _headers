@@ -1,5 +1,4 @@
 # Cloudflare Workers / Pages response headers.
-# Applied to every response served from this site.
 # CSP is intentionally omitted for now: inline scripts, Google Fonts,
 # and the Google Maps embed would all require nonces or allow-listed
 # origins — adding it properly is a separate task once those are
@@ -10,3 +9,24 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   X-Frame-Options: DENY
   X-Robots-Tag: noindex, nofollow
+
+# Static assets: long cache with immutable hint.
+# Filenames don't include a hash, so browsers won't re-fetch until
+# cache expires. 30 days is enough for a low-traffic demo site.
+/images/*
+  Cache-Control: public, max-age=2592000, immutable
+
+/*.png
+  Cache-Control: public, max-age=2592000, immutable
+
+/*.jpg
+  Cache-Control: public, max-age=2592000, immutable
+
+/*.svg
+  Cache-Control: public, max-age=2592000, immutable
+
+/*.css
+  Cache-Control: public, max-age=86400
+
+/*.js
+  Cache-Control: public, max-age=86400
