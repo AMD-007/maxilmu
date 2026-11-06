@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
 <title>Panel Admin — Maahad Cahaya Ilmu</title>
 <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Public+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
@@ -95,6 +96,11 @@
       <div class="panel-head">
         <span class="panel-head__meta" id="ambil-count-meta">0/0 Hadir</span>
       </div>
+      <!-- Hidden unless the selected date isn't today — see
+           renderAmbilDateBanner(). Deliberately loud (not a subtle
+           hint): picking the wrong day here means marking a whole
+           class's attendance against the wrong date. -->
+      <p class="date-warning-banner" id="ambil-date-banner" hidden></p>
       <div class="inline-form attendance-controls">
         <div class="field">
           <label for="ambil-class-select">Kelas</label>
@@ -112,6 +118,7 @@
         <span><span class="att-chip att-chip--inline att-chip--hadir" aria-hidden="true">H</span> Hadir</span>
         <span><span class="att-chip att-chip--inline att-chip--tidak-hadir" aria-hidden="true">T</span> Tidak Hadir</span>
         <span><span class="att-chip att-chip--inline att-chip--lewat" aria-hidden="true">L</span> Lewat</span>
+        <span><span class="att-chip att-chip--inline att-chip--bersurat" aria-hidden="true">B</span> Bersurat (diselesaikan admin di Rekod &amp; Semakan)</span>
       </div>
     </div>
 
@@ -304,6 +311,13 @@
     document.querySelectorAll(".portal-panel").forEach((panel) => { panel.hidden = panel.dataset.panel !== tabName; });
     const savebar = document.getElementById("ambil-savebar");
     if (savebar) savebar.hidden = !(tabName === "kehadiran" && isAmbilSubtabActive());
+    // Freshly opening the Kehadiran tab onto its Ambil Kehadiran
+    // sub-tab (the default) should never show a stale date — see
+    // resetAmbilDateToToday(). The dirty check above already ran
+    // before we got here, so this is never a surprise data loss.
+    if (tabName === "kehadiran" && typeof isAmbilSubtabActive === "function" && isAmbilSubtabActive() && typeof resetAmbilDateToToday === "function") {
+      resetAmbilDateToToday();
+    }
   }
   tabsNav.addEventListener("click", (e) => {
     const btn = e.target.closest(".portal-tabs__btn");
@@ -858,6 +872,9 @@
     document.querySelectorAll(".subpanel").forEach((panel) => { panel.hidden = panel.dataset.subpanel !== name; });
     ambilSavebar.hidden = name !== "ambil";
     if (name === "semakan") renderRegisterGrid();
+    // Re-opening Ambil Kehadiran (e.g. after a detour to Rekod &
+    // Semakan) resets its date to today — see resetAmbilDateToToday().
+    else if (name === "ambil") resetAmbilDateToToday();
   }
   subtabsNav.addEventListener("click", (e) => {
     const btn = e.target.closest(".subtabs__btn");
@@ -874,6 +891,7 @@
   const ambilListMount = document.getElementById("ambil-list");
   const ambilEmptyNote = document.getElementById("ambil-empty");
   const ambilCountMeta = document.getElementById("ambil-count-meta");
+  const ambilDateBanner = document.getElementById("ambil-date-banner");
 
   ambilClasses.forEach((c) => {
     const opt = document.createElement("option");
@@ -928,21 +946,56 @@
     ambilCountMeta.textContent = `${hadirCount}/${students.length} Hadir`;
   }
 
+  // Loud, hard-to-miss reminder whenever the picked date isn't today —
+  // a teacher who doesn't notice a stale/wrong date could otherwise
+  // mark a whole class's attendance against the wrong day (see bug
+  // report: date input used to open on a fixed stale date). Re-checked
+  // against a freshly-computed todayIso() every render, not a value
+  // cached once, so it stays correct even if the tab is left open
+  // across midnight.
+  function renderAmbilDateBanner() {
+    if (!ambilDateBanner) return;
+    const selected = ambilDateInput.value;
+    const today = todayIso();
+    if (selected && selected !== today) {
+      ambilDateBanner.hidden = false;
+      ambilDateBanner.textContent = `Anda menanda kehadiran untuk ${formatDate(selected)}, bukan hari ini (${formatDate(today)}).`;
+    } else {
+      ambilDateBanner.hidden = true;
+      ambilDateBanner.textContent = "";
+    }
+  }
+
   function renderAmbilList() {
     const students = ambilClassStudents(ambilDraftClass);
     ambilEmptyNote.hidden = students.length > 0;
     ambilListMount.innerHTML = students.map((s) => {
       const status = ambilDraft[s.id];
+      // "bersurat" is reached only via Rekod & Semakan (never a value a
+      // teacher can pick here — see AMBIL_STATUSES), so none of the H/T/L
+      // segments match it and none render active: the control correctly
+      // shows "no H/T/L selected" rather than one of them being silently
+      // (and wrongly) highlighted. What it must not do is show that with
+      // no explanation, so a "Bersurat" badge makes the reason visible —
+      // see the click guard below for why tapping H/T/L still works but
+      // asks for confirmation first.
+      const isBersurat = status === "bersurat";
       const segments = AMBIL_STATUSES.map((st) => `
         <button type="button"
           class="status-segmented__btn status-segmented__btn--${st} ${st === status ? "is-active" : ""}"
           data-student="${s.id}" data-status="${st}"
           aria-pressed="${st === status}">${ATTENDANCE_STATUSES[st].letter}</button>
       `).join("");
+      const bersuratBadge = isBersurat
+        ? `<span class="pill pill--bersurat" title="Diselesaikan sebagai Bersurat oleh admin di Rekod &amp; Semakan">Bersurat</span>`
+        : "";
       return `
         <div class="attendance-row">
           <span class="attendance-row__name">${escapeHtml(s.name)}</span>
-          <div class="status-segmented" role="group" aria-label="Status kehadiran ${escapeHtml(s.name)}">${segments}</div>
+          <div class="attendance-row__status">
+            ${bersuratBadge}
+            <div class="status-segmented" role="group" aria-label="Status kehadiran ${escapeHtml(s.name)}">${segments}</div>
+          </div>
         </div>
       `;
     }).join("");
@@ -952,6 +1005,14 @@
         const id = btn.dataset.student;
         const status = btn.dataset.status;
         if (ambilDraft[id] === status) return;
+        // Overwriting a day an admin already resolved to "bersurat" would
+        // silently undo that resolution — block it behind an explicit
+        // confirmation instead of letting a stray tap erase it.
+        if (ambilDraft[id] === "bersurat") {
+          const student = students.find((s) => s.id === id);
+          const ok = confirm(`${student ? student.name : "Pelajar ini"} telah diselesaikan sebagai Bersurat oleh admin untuk tarikh ini. Menandakan status di sini akan membatalkan rekod Bersurat tersebut. Teruskan?`);
+          if (!ok) return;
+        }
         ambilDraft[id] = status;
         ambilDirtyFlag = true;
         renderAmbilList();
@@ -964,6 +1025,20 @@
   function loadAndRenderAmbil(className, date) {
     loadAmbilDraft(className, date);
     renderAmbilList();
+    renderAmbilDateBanner();
+  }
+
+  // Called whenever the Ambil Kehadiran screen is (re-)opened — initial
+  // load, switching back to this sub-tab, or switching into the
+  // Kehadiran tab while this sub-tab is the active one — so the date
+  // never shows a stale value from earlier in the session. Safe to call
+  // unconditionally: by the time any of those navigations reach here,
+  // the isAmbilDirty() guard upstream has already either found no
+  // unsaved edits or gotten the user's explicit OK to discard them.
+  function resetAmbilDateToToday() {
+    if (!ambilClasses.length) return;
+    ambilDateInput.value = todayIso();
+    loadAndRenderAmbil(ambilClassSelect.value, ambilDateInput.value);
   }
 
   ambilClassSelect.addEventListener("change", () => {
@@ -976,14 +1051,31 @@
     loadAndRenderAmbil(ambilClassSelect.value, ambilDateInput.value);
   });
   document.getElementById("btn-mark-all-present").addEventListener("click", () => {
-    ambilClassStudents(ambilDraftClass).forEach((s) => { ambilDraft[s.id] = "hadir"; });
+    // Skips anyone already resolved "bersurat" — same rule as the
+    // per-row click guard above: a bulk action can't ask for
+    // per-student confirmation, so it simply never overwrites an
+    // admin's resolution rather than silently erasing it.
+    ambilClassStudents(ambilDraftClass).forEach((s) => {
+      if (ambilDraft[s.id] === "bersurat") return;
+      ambilDraft[s.id] = "hadir";
+    });
     ambilDirtyFlag = true;
     renderAmbilList();
   });
   document.getElementById("btn-save-attendance").addEventListener("click", () => {
     const students = ambilClassStudents(ambilDraftClass);
     if (!students.length) return;
-    students.forEach((s) => { setAttendanceForDate(s, ambilDraftDate, ambilDraft[s.id], null); });
+    students.forEach((s) => {
+      // A draft value of "bersurat" can only mean this student was
+      // never touched here (there's no H/T/L button for it — see
+      // AMBIL_STATUSES — and the click guard above requires an
+      // explicit confirm to move off it). Re-saving it anyway would
+      // pass note=null through to setAttendanceForDate() and silently
+      // wipe the admin's Rekod & Semakan note, so leave that record
+      // alone entirely instead.
+      if (ambilDraft[s.id] === "bersurat") return;
+      setAttendanceForDate(s, ambilDraftDate, ambilDraft[s.id], null);
+    });
     persist();
     ambilDirtyFlag = false;
     showToast(`Kehadiran ${ambilDraftClass} · ${formatDate(ambilDraftDate)} disimpan.`);
