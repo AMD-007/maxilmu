@@ -19,7 +19,11 @@ const SITE_CONFIG = {
   // inside the portal (app/parent.html Yuran section). Digits only,
   // country code first, e.g. Malaysia: 601XXXXXXXX.
   whatsappNumber: "60109464866",
-  adminContactNumber: "60123456789",
+  // Set to the same number as whatsappNumber for the demo so that any
+  // "Hubungi Admin Tentang Yuran" button in the portal opens the same
+  // channel rather than a placeholder. Real clients replace this with
+  // their own fee-inquiry line.
+  adminContactNumber: "60109464866",
 
   // "logo" is the transparent-background mark used everywhere it sits
   // directly on a page background (header, hero, footer, portal

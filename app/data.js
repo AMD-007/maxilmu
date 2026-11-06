@@ -92,13 +92,18 @@ const ATTENDANCE_STATUSES = {
   bersurat: { label: "Bersurat", letter: "B" },
 };
 
-// Static "today" for this demo build, shared by every /app page that
-// needs a default date (attendance entry, hafazan/fee entry) — keeps
-// seed data and freshly-added records in the same timeframe. Swap for
-// `new Date().toISOString().slice(0,10)` if this ever needs to track
-// the real clock.
+// Real "today", shared by every /app page that needs a default date
+// (attendance entry, hafazan/fee entry). Computed fresh on every call
+// (never cached in a module-level constant) so a page left open across
+// midnight, or a screen re-opened later the same session, still picks
+// up the actual current day — see Ambil Kehadiran's date input, which
+// re-reads this every time that screen is (re-)opened, not just once.
+// Built from local Y/M/D rather than `new Date().toISOString()`, which
+// would shift the date for any timezone behind UTC (same rule as
+// generateAttendanceLog()/formatDate() above).
 function todayIso() {
-  return "2026-08-01";
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 // Three fixed exam sittings per school year — the whole portal is
@@ -228,7 +233,7 @@ function defaultState() {
         name: "Ahmad Danish bin Rosli",
         className,
         parentName: "Rosli bin Ahmad",
-        parentPhone: "60191234561",
+        parentPhone: "60100000001",  // demo-only — not a real number
         status: "aktif",
         statusReason: "",
         // As of "today" (1 Ogos 2026) Akhir Tahun hasn't happened yet —
@@ -292,7 +297,7 @@ function defaultState() {
         name: "Nur Aisyah binti Zulkifli",
         className,
         parentName: "Zulkifli bin Hassan",
-        parentPhone: "60191234562",
+        parentPhone: "60100000002",  // demo-only — not a real number
         status: "aktif",
         statusReason: "",
         examRecords: [{
@@ -332,7 +337,7 @@ function defaultState() {
         name: "Muhammad Haziq bin Yusof",
         className,
         parentName: "Yusof bin Ibrahim",
-        parentPhone: "60191234563",
+        parentPhone: "60100000003",  // demo-only — not a real number
         status: "aktif",
         statusReason: "",
         examRecords: [{
@@ -382,7 +387,7 @@ function defaultState() {
         name: "Siti Maryam binti Ismail",
         className,
         parentName: "Ismail bin Othman",
-        parentPhone: "60191234564",
+        parentPhone: "60100000004",  // demo-only — not a real number
         status: "tidak-aktif",
         statusReason: "Pindah Sekolah",
         examRecords: [{
@@ -421,7 +426,7 @@ function defaultState() {
         name: "Amirul Hakim bin Zainal",
         className,
         parentName: "Zainal bin Kassim",
-        parentPhone: "60191234565",
+        parentPhone: "60100000005",  // demo-only — not a real number
         status: "aktif",
         statusReason: "",
         examRecords: [{
@@ -455,7 +460,7 @@ function defaultState() {
         name: "Nur Fatihah binti Rahman",
         className,
         parentName: "Rahman bin Salleh",
-        parentPhone: "60191234566",
+        parentPhone: "60100000006",  // demo-only — not a real number
         status: "aktif",
         statusReason: "",
         examRecords: [{
