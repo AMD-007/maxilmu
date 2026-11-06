@@ -1,0 +1,12 @@
+# Cloudflare Workers / Pages response headers.
+# Applied to every response served from this site.
+# CSP is intentionally omitted for now: inline scripts, Google Fonts,
+# and the Google Maps embed would all require nonces or allow-listed
+# origins — adding it properly is a separate task once those are
+# refactored to remove inline scripts.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Frame-Options: DENY
+  X-Robots-Tag: noindex, nofollow

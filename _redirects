@@ -1,0 +1,5 @@
+# Cloudflare Workers / Pages redirect rules.
+# /login gives teachers and admin a short, memorable URL to bookmark
+# instead of /app/login.html. The 302 is intentional (not 301) so that
+# the destination can be changed later without browsers caching the old target.
+/login /app/login.html 302
