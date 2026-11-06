@@ -345,6 +345,7 @@
 .pill--owing { background: rgba(156, 61, 38, 0.12); color: var(--error); }
 .pill--clear { background: rgba(61, 122, 92, 0.14); color: var(--malachite-ink); }
 .pill--inactive { background: rgba(43, 35, 24, 0.1); color: var(--ink-soft); }
+.pill--bersurat { background: rgba(42, 47, 92, 0.12); color: var(--indigo); }
 
 /* A visible-but-de-emphasized row for an inactive student revealed via
    "Tunjuk Pelajar Tidak Aktif" (or already in the Yuran list, which
@@ -650,6 +651,27 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.attendance-row__status {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Impossible-to-miss reminder above Ambil Kehadiran's controls when the
+   selected date isn't today (see renderAmbilDateBanner()) — same
+   rubrication-red used for form error states, since picking up the
+   wrong day here is a real risk, not a cosmetic mismatch. */
+.date-warning-banner {
+  background: var(--error);
+  color: var(--parchment);
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 6px;
+  margin: 0 0 var(--space-s);
+}
+.date-warning-banner[hidden] { display: none; }
 
 .att-chip {
   flex-shrink: 0;
