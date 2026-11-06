@@ -10,20 +10,17 @@
   X-Frame-Options: DENY
   X-Robots-Tag: noindex, nofollow
 
-# Static assets: long cache with immutable hint.
-# Filenames don't include a hash, so browsers won't re-fetch until
-# cache expires. 30 days is enough for a low-traffic demo site.
 /images/*
-  Cache-Control: public, max-age=2592000, immutable
+  Cache-Control: public, max-age=86400
 
 /*.png
-  Cache-Control: public, max-age=2592000, immutable
+  Cache-Control: public, max-age=86400
 
 /*.jpg
-  Cache-Control: public, max-age=2592000, immutable
+  Cache-Control: public, max-age=86400
 
 /*.svg
-  Cache-Control: public, max-age=2592000, immutable
+  Cache-Control: public, max-age=86400
 
 /*.css
   Cache-Control: public, max-age=86400
