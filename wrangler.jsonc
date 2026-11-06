@@ -1,16 +1,8 @@
 {
-  // Cloudflare Workers static-asset deployment.
-  // `npx wrangler deploy` from repo root publishes everything tracked by
-  // git (respecting .gitignore) except .git/ itself.
-  // `npx wrangler dev` starts a local preview at http://localhost:8787.
-  "name": "maahad-cahaya-ilmu",
-  "compatibility_date": "2025-01-01",
-
+  "name": "maxilmu",
+  "compatibility_date": "2026-09-28",
   "assets": {
-    // Serve from repo root (all web files live here — no public/ subdir).
-    "directory": ".",
-    // Return 404.html with a 404 status for any unmatched path, instead
-    // of Cloudflare's generic "not found" page.
+    "directory": "public",
     "not_found_handling": "404-page"
   }
 }
