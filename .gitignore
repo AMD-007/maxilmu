@@ -15,3 +15,6 @@ index-mobile-top.png
 
 # Unused legacy asset
 logoMDA.png
+
+# Wrangler local dev state
+.wrangler/
