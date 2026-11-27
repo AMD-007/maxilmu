@@ -1,0 +1,11 @@
+# Wrangler reads this only from inside the assets directory (public/).
+.assetsignore
+.git
+.claude
+.wrangler
+.playwright-mcp
+node_modules
+*.md
+*.log
+.DS_Store
+Thumbs.db
