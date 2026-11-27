@@ -1745,7 +1745,7 @@
       document.getElementById("btn-save-contact").addEventListener("click", () => {
         const val = document.getElementById("admin-contact-input").value.trim();
         if (!/^\d{8,15}$/.test(val)) {
-          alert("Sila masukkan nombor yang sah (digit sahaja, kod negara dahulu, cth 60123456789).");
+          alert("Sila masukkan nombor yang sah (digit sahaja, kod negara dahulu, cth 601XXXXXXXX).");
           return;
         }
         state.settings.adminContactNumber = val;
