@@ -106,6 +106,19 @@ function todayIso() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+// Last day of seed attendance: yesterday, so the demo always shows the
+// current and previous month while today stays untaken for the
+// Ambil Kehadiran demo. Start stays fixed at 2026-01-05, which keeps the
+// earlier rolls, the bersurat examples and the capUnresolvedAbsences
+// tuning unchanged.
+// shortcut: records stay stamped CURRENT_ACADEMIC_YEAR "2026"; once the
+// demo runs into 2027, make the start and academic year relative too.
+function seedAttendanceEnd() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 // Three fixed exam sittings per school year — the whole portal is
 // built around exactly these three, never an arbitrary list, per
 // how the madrasah actually runs its academic calendar.
@@ -202,6 +215,7 @@ function capUnresolvedAbsences(log, keep) {
 // ── Seed data — replaced entirely once an admin edits anything;
 //    exists only so the demo has something to show on first load ──
 function defaultState() {
+  const attendanceEnd = seedAttendanceEnd();
   return {
     settings: {
       subjects: SITE_CONFIG.subjects.slice(),
@@ -248,14 +262,14 @@ function defaultState() {
             akhir: {},
           },
         }],
-        // Daily records, Jan-Jul 2026. keep=1 -> ~99% (the seed's
+        // Daily records, Jan 2026 to yesterday. keep=1 -> ~99% (the seed's
         // highest rate; see capUnresolvedAbsences for how `keep` both
         // sizes the unresolved-absence total AND sets the rate). Only
         // 2 of the 6 students (Haziq, Fatihah, below) carry more than
         // a couple of unresolved days, so the Rekod & Semakan badge
         // reads as a small to-do list, not a wall of red flags. Keeps
         // this seed's one bersurat example.
-        attendanceLog: stampSnapshot(capUnresolvedAbsences(generateAttendanceLog("a1", "2026-01-05", "2026-07-31", 95, 10501, { "2026-03-11": "Demam" }), 1), className),
+        attendanceLog: stampSnapshot(capUnresolvedAbsences(generateAttendanceLog("a1", "2026-01-05", attendanceEnd, 95, 10501, { "2026-03-11": "Demam" }), 1), className),
         hafazanLog: stampSnapshot([
           { id: "h1a", date: "2026-01-12", amount: 0.5, note: "Juz 1, m/s 1-10" },
           { id: "h1b", date: "2026-01-26", amount: 0.5, note: "Juz 1, m/s 11-20" },
@@ -310,7 +324,7 @@ function defaultState() {
             akhir: {},
           },
         }],
-        attendanceLog: stampSnapshot(capUnresolvedAbsences(generateAttendanceLog("a2", "2026-01-05", "2026-07-31", 91, 20502, null), 3), className),
+        attendanceLog: stampSnapshot(capUnresolvedAbsences(generateAttendanceLog("a2", "2026-01-05", attendanceEnd, 91, 20502, null), 3), className),
         hafazanLog: stampSnapshot([
           { id: "h2a", date: "2026-01-19", amount: 0.5, note: "" },
           { id: "h2b", date: "2026-02-02", amount: 0.5, note: "" },
@@ -356,7 +370,7 @@ function defaultState() {
         // this and Fatihah (below, keep=9 -> ~94%) are deliberately the
         // seed's two lowest rates AND its only students with more than
         // a token unresolved "tidak-hadir" count.
-        attendanceLog: stampSnapshot(capUnresolvedAbsences(generateAttendanceLog("a3", "2026-01-05", "2026-07-31", 87, 30503, { "2026-05-20": "Urusan keluarga" }), 7), className),
+        attendanceLog: stampSnapshot(capUnresolvedAbsences(generateAttendanceLog("a3", "2026-01-05", attendanceEnd, 87, 30503, { "2026-05-20": "Urusan keluarga" }), 7), className),
         hafazanLog: stampSnapshot([
           { id: "h3a", date: "2026-01-12", amount: 1, note: "" },
           { id: "h3b", date: "2026-02-02", amount: 1, note: "Juz 2 selesai" },
@@ -405,7 +419,7 @@ function defaultState() {
         // "tidak-hadir" days at all, leaving nothing for
         // capUnresolvedAbsences to draw an unresolved/rate-setting
         // pool from. keep=4 -> ~97%.
-        attendanceLog: stampSnapshot(capUnresolvedAbsences(generateAttendanceLog("a4", "2026-01-05", "2026-07-31", 94, 40504, null), 4), className),
+        attendanceLog: stampSnapshot(capUnresolvedAbsences(generateAttendanceLog("a4", "2026-01-05", attendanceEnd, 94, 40504, null), 4), className),
         hafazanLog: stampSnapshot([
           { id: "h4a", date: "2026-02-02", amount: 0.5, note: "" },
           { id: "h4b", date: "2026-02-23", amount: 0.5, note: "" },
@@ -439,7 +453,7 @@ function defaultState() {
             akhir: {},
           },
         }],
-        attendanceLog: stampSnapshot(capUnresolvedAbsences(generateAttendanceLog("a5", "2026-01-05", "2026-07-31", 93, 50505, null), 6), className),
+        attendanceLog: stampSnapshot(capUnresolvedAbsences(generateAttendanceLog("a5", "2026-01-05", attendanceEnd, 93, 50505, null), 6), className),
         hafazanLog: stampSnapshot([
           { id: "h5a", date: "2026-01-26", amount: 0.5, note: "" },
           { id: "h5b", date: "2026-03-02", amount: 0.5, note: "" },
@@ -473,7 +487,7 @@ function defaultState() {
             akhir: {},
           },
         }],
-        attendanceLog: stampSnapshot(capUnresolvedAbsences(generateAttendanceLog("a6", "2026-01-05", "2026-07-31", 85, 60506, null), 9), className),
+        attendanceLog: stampSnapshot(capUnresolvedAbsences(generateAttendanceLog("a6", "2026-01-05", attendanceEnd, 85, 60506, null), 9), className),
         hafazanLog: stampSnapshot([
           { id: "h6a", date: "2026-01-19", amount: 0.5, note: "" },
           { id: "h6b", date: "2026-02-16", amount: 0.5, note: "" },
