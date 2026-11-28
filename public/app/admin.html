@@ -2104,6 +2104,16 @@
       alert("Sila masukkan jumlah sasaran yang sah.");
       return;
     }
+    // Records store a bare number; changing the unit would silently
+    // relabel "1.5 Juzuk" as "1.5 Surah". Blocked while any exist.
+    // shortcut: demo only — the real version would convert or archive.
+    const recordCount = state.students.reduce((n, s) => n + s.hafazanLog.length, 0);
+    if (unit !== state.settings.hafazan.unit && recordCount > 0) {
+      const from = hafazanUnitLabel(state.settings.hafazan.unit, 2);
+      alert(`Unit tidak boleh ditukar: sudah ada ${recordCount} rekod hafazan dalam ${from}. Menukar unit akan melabel semula angka yang sama dengan unit lain, jadi rekod lama menjadi salah. (Demo — dalam sistem sebenar, rekod lama perlu ditukar atau diarkibkan dahulu.)`);
+      document.getElementById("hafazan-unit-select").value = state.settings.hafazan.unit;
+      return;
+    }
     state.settings.hafazan = { unit, total: Math.round(total) };
     persist();
     renderStudentTable();
