@@ -1103,7 +1103,7 @@ function hafazanRemaining(state, student) {
 const HAFAZAN_INVALID_MESSAGE = "Sila isi tarikh (bukan masa depan) dan jumlah tambahan yang sah.";
 function hafazanEntryError(state, student, { date, amount }) {
   const n = Math.round(Number(amount) * 100) / 100;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "") || !(n > 0)) return HAFAZAN_INVALID_MESSAGE;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "") || date > todayIso() || !(n > 0)) return HAFAZAN_INVALID_MESSAGE;
   const { unit, total } = state.settings.hafazan;
   const label = hafazanUnitLabel(unit, 2);
   const remaining = hafazanRemaining(state, student);

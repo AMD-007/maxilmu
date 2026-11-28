@@ -805,7 +805,7 @@
         <div class="inline-form">
           <div class="field">
             <label for="hafazan-entry-date">Tarikh</label>
-            <input type="date" id="hafazan-entry-date" value="${todayIso()}">
+            <input type="date" id="hafazan-entry-date" value="${todayIso()}" max="${todayIso()}">
           </div>
           <div class="field">
             <label for="hafazan-entry-amount">Tambahan (${hafazanUnitLabel(hafazan.unit, 2)})</label>
@@ -1017,6 +1017,7 @@
     ambilClassSelect.appendChild(opt);
   });
   ambilDateInput.value = todayIso();
+  ambilDateInput.max = todayIso();
 
   // In-memory only until "Simpan Kehadiran" — a teacher scrolling and
   // tapping through 30 students shouldn't have each tap hit
@@ -1155,6 +1156,7 @@
   function resetAmbilDateToToday() {
     if (!ambilClasses.length) return;
     ambilDateInput.value = todayIso();
+    ambilDateInput.max = todayIso();
     loadAndRenderAmbil(ambilClassSelect.value, ambilDateInput.value);
   }
 
@@ -1162,8 +1164,13 @@
     if (!confirmDiscardAmbilIfDirty()) { ambilClassSelect.value = ambilDraftClass; return; }
     loadAndRenderAmbil(ambilClassSelect.value, ambilDateInput.value);
   });
+  // Future dates are refused (same rule as the guru page) — past dates
+  // are allowed, with the "bukan hari ini" banner.
+  const AMBIL_FUTURE_MESSAGE = "Kehadiran tidak boleh ditanda untuk tarikh masa depan.";
   ambilDateInput.addEventListener("change", () => {
+    ambilDateInput.max = todayIso();
     if (!ambilDateInput.value) { ambilDateInput.value = ambilDraftDate; return; }
+    if (ambilDateInput.value > todayIso()) { ambilDateInput.value = ambilDraftDate; alert(AMBIL_FUTURE_MESSAGE); return; }
     if (!confirmDiscardAmbilIfDirty()) { ambilDateInput.value = ambilDraftDate; return; }
     loadAndRenderAmbil(ambilClassSelect.value, ambilDateInput.value);
   });
@@ -1182,6 +1189,7 @@
   document.getElementById("btn-save-attendance").addEventListener("click", () => {
     const students = ambilClassStudents(ambilDraftClass);
     if (!students.length) return;
+    if (ambilDraftDate > todayIso()) { alert(AMBIL_FUTURE_MESSAGE); return; }
     students.forEach((s) => {
       // A draft value of "bersurat" can only mean this student was
       // never touched here (there's no H/T/L button for it — see
