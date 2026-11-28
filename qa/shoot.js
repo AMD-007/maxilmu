@@ -22,6 +22,13 @@ async function rowBtn(page, sel) { await page.locator(sel).first().click(); awai
 const ADMIN = { role: "admin" };
 const STATES = [
   { name: "index", url: "/index.html", full: true },
+  // Mini header only appears once the hero is off-screen — a full-page shot
+  // from the top never shows it (that's how the 375/320 wrap bug got missed).
+  { name: "index-scrolled", url: "/index.html", act: async (p) => {
+    await p.evaluate(() => { const h = document.querySelector(".hero"); scrollTo(0, h.offsetTop + h.offsetHeight + 200); });
+    await p.waitForSelector("#miniHeader.is-visible");
+    await p.waitForTimeout(450); // .35s slide-in transition
+  } },
   { name: "404", url: "/nope-404", full: true },
   { name: "login", url: "/app/login.html", full: true },
   { name: "admin-pelajar", session: ADMIN, url: "/app/admin.html", full: true },
