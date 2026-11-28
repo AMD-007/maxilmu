@@ -491,7 +491,7 @@
               </div>
               <div class="field">
                 <label for="tasmik-amount-${s.id}">Tambahan (${escapeHtml(unit)})</label>
-                <input type="number" id="tasmik-amount-${s.id}" name="amount" inputmode="decimal" min="0.25" max="114" step="0.25" value="0.5" required>
+                <input type="number" id="tasmik-amount-${s.id}" name="amount" inputmode="decimal" min="0.25" max="${hafazanRemaining(state, s)}" step="0.25" value="${Math.min(0.5, hafazanRemaining(state, s))}" required>
               </div>
               <div class="field tasmik-form__note">
                 <label for="tasmik-note-${s.id}">Catatan (pilihan)</label>
@@ -509,14 +509,17 @@
       const date = form.elements.date.value;
       const amount = form.elements.amount.value;
       const note = form.elements.note.value;
-      if (!form.elements.date.validity.valid || !form.elements.amount.validity.valid || date > todayIso()) {
-        alert("Sila isi tarikh (bukan masa depan) dan jumlah tambahan yang sah.");
-        return;
-      }
+      // Over-target first, so it gets its own message instead of the
+      // generic one the input's max (= remaining) would trigger.
+      const current = getStudent(state, studentId);
+      const error = (current && hafazanEntryError(state, current, { date, amount }))
+        || ((!form.elements.date.validity.valid || !form.elements.amount.validity.valid || date > todayIso()) ? HAFAZAN_INVALID_MESSAGE : null);
+      if (error) { alert(error); return; }
       const saved = freshGuardedWrite(() => {
         const s = getStudent(state, studentId);
         if (!s || !guruCanRecordHafazan(guru, s)) { alert("Pelajar ini tidak lagi dalam halaqah anda."); return false; }
-        if (!addHafazanEntry(s, { date, amount, note }, guru.id)) { alert("Sila isi tarikh dan jumlah tambahan yang sah."); return false; }
+        const freshError = hafazanEntryError(state, s, { date, amount });
+        if (freshError || !addHafazanEntry(state, s, { date, amount, note }, guru.id)) { alert(freshError || HAFAZAN_INVALID_MESSAGE); return false; }
         saveState(state);
         return true;
       });

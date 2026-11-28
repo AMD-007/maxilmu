@@ -1092,11 +1092,31 @@ function sortedHafazanLog(student, order) {
   return order === "desc" ? list.reverse() : list;
 }
 
+// What's left before this student reaches settings.hafazan.total —
+// the largest single entry allowed (never negative).
+function hafazanRemaining(state, student) {
+  return Math.max(0, Math.round((state.settings.hafazan.total - getHafazanTotal(student)) * 100) / 100);
+}
+
+// Shared by the admin modal and the guru page so both show the same
+// message; null means the entry is fine.
+const HAFAZAN_INVALID_MESSAGE = "Sila isi tarikh (bukan masa depan) dan jumlah tambahan yang sah.";
+function hafazanEntryError(state, student, { date, amount }) {
+  const n = Math.round(Number(amount) * 100) / 100;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "") || !(n > 0)) return HAFAZAN_INVALID_MESSAGE;
+  const { unit, total } = state.settings.hafazan;
+  const label = hafazanUnitLabel(unit, 2);
+  const remaining = hafazanRemaining(state, student);
+  if (remaining <= 0) return `${student.name} sudah mencapai sasaran ${total} ${label}. Tiada tambahan boleh direkod.`;
+  if (n > remaining) return `Tambahan melebihi sasaran ${total} ${label}. Baki untuk ${student.name}: ${remaining} ${label}.`;
+  return null;
+}
+
 // The single write path for a new hafazan/tasmik entry (admin modal
 // and guru page). Validates here too, not just in the UI.
-function addHafazanEntry(student, { date, amount, note }, enteredBy) {
+function addHafazanEntry(state, student, { date, amount, note }, enteredBy) {
+  if (hafazanEntryError(state, student, { date, amount })) return null;
   const n = Number(amount);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "") || !(n > 0) || n > 114) return null; // 114 = surah count, the largest unit
   const entry = {
     id: uid("h"), date, amount: Math.round(n * 100) / 100, note: String(note || "").trim().slice(0, 120),
     ...snapshotFields(student),
