@@ -51,12 +51,13 @@ a:focus-visible, button:focus-visible{outline:3px solid var(--teal); outline-off
   padding:.7rem 1.2rem;background:rgba(246,240,228,.88);backdrop-filter:blur(6px);
   border-bottom:1px solid rgba(43,35,24,.08); transform:translateY(-100%); transition:transform .35s ease;}
 .mini-header.is-visible{transform:translateY(0);}
-/* One row at every width: buttons never wrap or shrink; the brand name is
-   the only thing that gives (ellipsis whenever it runs out of room —
-   in practice <=414 — and logo-only <=360). */
-.mini-header__brand{display:flex;align-items:center;gap:.5rem;min-width:0;text-decoration:none;color:var(--ink);font-family:var(--font-display);font-weight:600;}
+/* One row at every width: buttons never wrap or shrink. The client's name
+   is never truncated — full name above 480px, logo only at <=480.
+   If SITE_CONFIG.name gets longer, re-check 481px (qa/shoot.js audit
+   flags it as "offscreen") and raise the 480 breakpoint below. */
+.mini-header__brand{display:flex;align-items:center;gap:.5rem;text-decoration:none;color:var(--ink);font-family:var(--font-display);font-weight:600;}
 .mini-header__brand img{flex-shrink:0;width:30px;height:30px;border-radius:50%;object-fit:cover;}
-.mini-header__brand span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mini-header__brand span{white-space:nowrap;}
 .mini-header__actions{display:flex;align-items:center;gap:.6rem;flex-shrink:0;}
 .mini-header__login{color:var(--ink-soft);padding:.5rem 1rem;border-radius:99px;border:1.5px solid rgba(43,35,24,.18);text-decoration:none;font-size:.85rem;font-weight:700;white-space:nowrap;}
 .mini-header__cta{background:var(--teal);color:#fff;padding:.5rem 1rem;border-radius:99px;text-decoration:none;font-size:.85rem;font-weight:700;white-space:nowrap;}
@@ -66,9 +67,9 @@ a:focus-visible, button:focus-visible{outline:3px solid var(--teal); outline-off
 /* Logo only. The name stays in the DOM, visually hidden (same technique
    as .sr-only), so it is still the link's accessible name and still
    follows SITE_CONFIG.name — no hard-coded aria-label to drift. */
-@media (max-width:360px){
+@media (max-width:480px){
   .mini-header__brand{min-width:44px;}
-  .mini-header__brand span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);text-overflow:clip;}
+  .mini-header__brand span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
 }
 
 /* =================================================================
@@ -86,9 +87,9 @@ a:focus-visible, button:focus-visible{outline:3px solid var(--teal); outline-off
 @media (min-width:640px){.hero__label{margin:0 0 3.2rem 3.2rem;}}
 @media (min-width:900px){.hero__label{margin:0 0 4.4rem 5.5rem;padding:2.4rem 2.4rem 2rem;max-width:29rem;}}
 /* >=1440: the five students fill ~28-64% of the frame, so a left label hid
-   the first one or two. Pasted bottom-right instead, clear of all five.
-   shortcut: 1100-1439 still overlaps (no left/right spot fits a 467px
-   label there); fixing it needs a smaller label or a tighter photo crop. */
+   the first one or two. Pasted bottom-right instead, clear of all five;
+   the scroll hint moves bottom-left (rule below .hero__scroll) so the two
+   don't crowd each other. (1100-1439 uses the photo-band layout further down.) */
 @media (min-width:1440px){.hero__label{margin:0 3rem 4.4rem auto;}}
 .hero__label::before{content:"";position:absolute;inset:0;pointer-events:none;
   border:1px solid rgba(184,147,74,.55); margin:8px;}
@@ -104,6 +105,7 @@ a:focus-visible, button:focus-visible{outline:3px solid var(--teal); outline-off
   font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;display:none;align-items:center;gap:.5rem;opacity:.85;}
 .hero__scroll::after{content:"";width:1px;height:34px;background:var(--on-indigo);opacity:.7;}
 @media (min-width:900px){.hero__scroll{display:inline-flex;}}
+@media (min-width:1440px){.hero__scroll{right:auto;left:1.5rem;}}
 
 /* torn parchment strip stitching hero into the page below */
 .torn{position:relative;height:18px;background:var(--parchment);margin-top:-1px;}
@@ -259,11 +261,12 @@ address{font-style:normal;color:var(--ink-soft);margin:0 0 .6rem;line-height:1.5
 /* In-page links (#tentang, #hubungi…) land below the fixed mini header. */
 section[id]{scroll-margin-top:4.5rem;}
 
-/* Phones + tablets (<1100, incl. landscape and 1024 iPad): the pasted label
-   sat over the walking students — the photo's subject. Here the photo
-   gets its own band and the label is pasted across its torn bottom
-   edge instead of on top of the children. Desktop (>=1100) unchanged. */
-@media (max-width:1099px){
+/* Phones, tablets and smaller desktops (<1440, incl. landscape, 1024 iPad,
+   1280/1366 laptops): the pasted label sat over the walking students — the
+   photo's subject. Here the photo gets its own band and the label is
+   pasted across its torn bottom edge instead of on top of the children.
+   >=1440 keeps the full-bleed hero with the label bottom-right. */
+@media (max-width:1439px){
   .hero{display:block;min-height:0;overflow:visible;}
   .hero__photo{position:relative;height:min(62vw,70vh);
     /* torn edge on the photo itself (same 18px zigzag as .torn) */
@@ -273,6 +276,13 @@ section[id]{scroll-margin-top:4.5rem;}
   .hero__scroll{display:none;}
   .torn{display:none;}
   .about{padding-top:3.5rem;}
+}
+/* 1100-1439: band is capped by 70vh, so the photo is cropped top/bottom.
+   Anchor it to the bottom (lifts the students' feet up the band) and
+   overlap the card a little less, so all five stay clear of it. */
+@media (min-width:1100px) and (max-width:1439px){
+  .hero__photo img{object-position:50% 100%;}
+  .hero__label{margin-top:-3rem;}
 }
 /* Phones: label spans the width with the mobile gutters, overlapping
    the photo edge less so the students stay clear. */
