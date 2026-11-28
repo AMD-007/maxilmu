@@ -32,6 +32,7 @@
   <button class="portal-tabs__btn is-active" data-tab="pelajar" type="button">Pelajar</button>
   <button class="portal-tabs__btn" data-tab="kehadiran" type="button">Kehadiran</button>
   <!-- Yuran tab button is inserted by JS only when FEATURES.finance is true — see renderYuranPanel() -->
+  <button class="portal-tabs__btn" data-tab="guru" type="button">Guru</button>
   <button class="portal-tabs__btn" data-tab="tetapan" type="button">Tetapan</button>
 </nav>
 
@@ -150,6 +151,39 @@
        and appended to <main> by JS only when FEATURES.finance is true.
        See renderYuranPanel() below. When the flag is false, no Yuran
        tab, panel, or content of any kind is ever added to the DOM. -->
+
+  <!-- ============================================================
+       GURU — teacher accounts (demo: no passwords) + assignments.
+       Gurus are never deleted, only made tidak aktif, so every record
+       they entered keeps resolving to their name.
+       ============================================================ -->
+  <section class="portal-panel" data-panel="guru" id="panel-guru" hidden>
+    <div class="panel-head">
+      <h1>Guru</h1>
+      <span class="panel-head__meta" id="guru-count-meta"></span>
+    </div>
+    <div class="card">
+      <h2>Tambah Guru</h2>
+      <p class="card__hint">Guru log masuk dengan memilih nama mereka di halaman log masuk. Ini demo — tiada kata laluan.</p>
+      <form class="inline-form" id="add-guru-form" novalidate>
+        <div class="field">
+          <label for="new-guru-name">Nama</label>
+          <input type="text" id="new-guru-name" placeholder="Cth: Ustazah Aminah" maxlength="60" required>
+        </div>
+        <div class="field">
+          <label for="new-guru-username">Nama pengguna</label>
+          <input type="text" id="new-guru-username" placeholder="Cth: aminah" maxlength="20" autocapitalize="none" autocomplete="off" spellcheck="false" required>
+        </div>
+        <button class="btn btn--secondary btn--small" type="submit">Tambah Guru</button>
+      </form>
+    </div>
+    <div class="table-wrap" style="margin-top: var(--space-m);">
+      <table class="data-table stack-table">
+        <thead><tr><th>Nama</th><th>Nama pengguna</th><th>Status</th><th>Tugasan</th><th></th></tr></thead>
+        <tbody id="guru-table-body"></tbody>
+      </table>
+    </div>
+  </section>
 
   <!-- ============================================================
        TETAPAN — subjects, hafazan config, contact number, reset
@@ -1538,6 +1572,160 @@
   }
 
   // ================================================================
+  // GURU — list, Tambah Guru, assignments, aktif/tidak aktif.
+  // No delete anywhere: a guru's id is what every enteredBy points at.
+  // ================================================================
+  function renderGuruPanel() {
+    const teachers = state.settings.teachers.slice().sort((a, b) =>
+      (a.status === "aktif" ? 0 : 1) - (b.status === "aktif" ? 0 : 1) || a.name.localeCompare(b.name));
+    const activeCount = teachers.filter((t) => t.status === "aktif").length;
+    document.getElementById("guru-count-meta").textContent = `${activeCount} aktif · ${teachers.length} jumlah`;
+    const body = document.getElementById("guru-table-body");
+    if (!teachers.length) {
+      body.innerHTML = '<tr><td colspan="5"><span class="empty-note">Belum ada guru.</span></td></tr>';
+      return;
+    }
+    body.innerHTML = teachers.map((t) => {
+      const isAktif = t.status === "aktif";
+      const tasks = t.assignments.length
+        ? `<span class="chip-list chip-list--tight">${t.assignments.map((a) => `<span class="chip chip--static">${escapeHtml(assignmentLabel(state, a))}</span>`).join("")}</span>`
+        : '<span class="cell-muted">Tiada tugasan</span>';
+      return `
+        <tr class="${isAktif ? "" : "is-inactive-row"}">
+          <td data-label="Nama">${escapeHtml(t.name)}</td>
+          <td data-label="Nama pengguna">@${escapeHtml(t.username)}</td>
+          <td data-label="Status"><span class="pill ${isAktif ? "pill--clear" : "pill--inactive"}">${escapeHtml(TEACHER_STATUSES[t.status].label)}</span>${!isAktif && t.statusReason ? ` <span class="cell-muted">${escapeHtml(t.statusReason)}</span>` : ""}</td>
+          <td data-label="Tugasan">${tasks}</td>
+          <td class="cell-actions" data-label="">
+            ${isAktif ? `<button class="btn btn--secondary btn--small" type="button" data-guru-assign="${t.id}">Urus Tugasan</button>` : ""}
+            <button class="btn btn--secondary btn--small" type="button" data-guru-toggle="${t.id}">${isAktif ? "Tandakan Tidak Aktif" : "Aktifkan Semula"}</button>
+          </td>
+        </tr>`;
+    }).join("");
+    body.querySelectorAll("[data-guru-assign]").forEach((btn) => btn.addEventListener("click", () => openGuruAssignModal(btn.dataset.guruAssign)));
+    body.querySelectorAll("[data-guru-toggle]").forEach((btn) => btn.addEventListener("click", () => toggleGuruStatus(btn.dataset.guruToggle)));
+  }
+
+  document.getElementById("add-guru-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nameInput = document.getElementById("new-guru-name");
+    const userInput = document.getElementById("new-guru-username");
+    const name = nameInput.value.trim().replace(/\s+/g, " ");
+    const username = userInput.value.trim().toLowerCase();
+    if (name.length < 3) { alert("Sila masukkan nama guru (sekurang-kurangnya 3 aksara)."); nameInput.focus(); return; }
+    if (!/^[a-z0-9._]{3,20}$/.test(username)) { alert("Nama pengguna: 3-20 aksara, huruf kecil, nombor, titik atau garis bawah sahaja."); userInput.focus(); return; }
+    if (state.settings.teachers.some((t) => t.username === username)) { alert("Nama pengguna ini sudah digunakan."); userInput.focus(); return; }
+    state.settings.teachers.push({ id: uid("g"), name, username, status: "aktif", statusReason: "", roles: ["guru"], assignments: [] });
+    persist();
+    nameInput.value = "";
+    userInput.value = "";
+    renderGuruPanel();
+    showToast(`${name} ditambah. Tekan "Urus Tugasan" untuk beri kelas atau halaqah.`);
+  });
+
+  function toggleGuruStatus(id) {
+    const t = getTeacher(state, id);
+    if (!t) return;
+    if (t.status === "aktif") {
+      const ok = confirm(`Tandakan ${t.name} Tidak Aktif? Semua tugasan akan dibuang dan sesi log masuknya ditamatkan. Semua rekod yang pernah dimasukkannya KEKAL dan masih dipaparkan dengan namanya.`);
+      if (!ok) return;
+      t.status = "tidak aktif";
+      t.assignments = [];
+      persist();
+      showToast(`${t.name} ditandakan Tidak Aktif.`);
+    } else {
+      t.status = "aktif";
+      t.statusReason = "";
+      persist();
+      showToast(`${t.name} diaktifkan semula. Beri tugasan melalui "Urus Tugasan".`);
+    }
+    renderGuruPanel();
+  }
+
+  function openGuruAssignModal(id) {
+    const t = getTeacher(state, id);
+    if (!t || t.status !== "aktif") return;
+    const classes = getClassList(state);
+
+    function bodyHtml() {
+      return `
+        <div class="chip-list">
+          ${t.assignments.length ? t.assignments.map((a, i) => `
+            <span class="chip">${escapeHtml(assignmentLabel(state, a))}
+              <button type="button" data-remove-assignment="${i}" aria-label="Buang tugasan ${escapeHtml(assignmentLabel(state, a))}">&times;</button>
+            </span>`).join("") : '<p class="empty-note">Belum ada tugasan.</p>'}
+        </div>
+        <h3 class="modal__subhead">Tambah Kelas &amp; Subjek</h3>
+        <div class="inline-form">
+          <div class="field">
+            <label for="assign-class-select">Kelas</label>
+            <select id="assign-class-select">${classes.map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("")}</select>
+          </div>
+          <div class="field">
+            <label for="assign-subject-select">Subjek</label>
+            <select id="assign-subject-select">${state.settings.subjects.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("")}</select>
+          </div>
+          <button class="btn btn--secondary btn--small" id="btn-assign-kelas" type="button">Tambah</button>
+        </div>
+        <h3 class="modal__subhead">Tambah Halaqah (Hafazan)</h3>
+        <div class="inline-form">
+          <div class="field">
+            <label for="assign-halaqah-select">Halaqah</label>
+            <select id="assign-halaqah-select">${state.settings.halaqah.map((h) => `<option value="${h.id}">${escapeHtml(h.name)}</option>`).join("")}</select>
+          </div>
+          <button class="btn btn--secondary btn--small" id="btn-assign-halaqah" type="button">Tambah</button>
+        </div>
+      `;
+    }
+
+    function addAssignment(a) {
+      const dup = t.assignments.some((x) => x.type === a.type && x.classId === a.classId && x.subject === a.subject && x.halaqahId === a.halaqahId);
+      if (dup) { alert("Tugasan ini sudah ada."); return; }
+      t.assignments.push(a);
+      persist();
+      renderModalBody();
+      renderGuruPanel();
+      showToast(`Tugasan ditambah: ${assignmentLabel(state, a)}.`);
+    }
+
+    function renderModalBody() {
+      modalRoot.querySelector("#guru-assign-body").innerHTML = bodyHtml();
+      modalRoot.querySelectorAll("[data-remove-assignment]").forEach((btn) => btn.addEventListener("click", () => {
+        const a = t.assignments[Number(btn.dataset.removeAssignment)];
+        if (!a || !confirm(`Buang tugasan ${assignmentLabel(state, a)} daripada ${t.name}? Rekod sedia ada tidak terjejas.`)) return;
+        t.assignments.splice(Number(btn.dataset.removeAssignment), 1);
+        persist();
+        renderModalBody();
+        renderGuruPanel();
+      }));
+      const kelasBtn = document.getElementById("btn-assign-kelas");
+      kelasBtn.disabled = !classes.length || !state.settings.subjects.length;
+      kelasBtn.addEventListener("click", () => addAssignment({
+        type: "kelas",
+        classId: document.getElementById("assign-class-select").value,
+        subject: document.getElementById("assign-subject-select").value,
+      }));
+      const halaqahBtn = document.getElementById("btn-assign-halaqah");
+      halaqahBtn.disabled = !state.settings.halaqah.length;
+      halaqahBtn.addEventListener("click", () => addAssignment({ type: "halaqah", halaqahId: document.getElementById("assign-halaqah-select").value }));
+    }
+
+    openModal(`
+      <div class="modal__head">
+        <h2>Tugasan — ${escapeHtml(t.name)}</h2>
+        <button class="modal__close" type="button" data-close aria-label="Tutup">&times;</button>
+      </div>
+      <p class="card__hint">Guru hanya nampak kelas, subjek dan halaqah yang ditugaskan di sini.</p>
+      <div id="guru-assign-body"></div>
+      <div class="modal__actions">
+        <button class="btn btn--small" type="button" data-close>Selesai</button>
+      </div>
+    `);
+    modalRoot.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeModal));
+    renderModalBody();
+  }
+
+  // ================================================================
   // TETAPAN — subjects, hafazan config, admin contact number
   // ================================================================
   function renderSettings() {
@@ -1843,6 +2031,7 @@
   renderDashboardStats();
   renderStudentTable();
   renderYuranPanel();
+  renderGuruPanel();
   renderSettings();
 })();
 </script>

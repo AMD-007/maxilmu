@@ -851,3 +851,11 @@ thead .register-name { background: var(--parchment-dim); z-index: 3; }
   z-index: 200;
 }
 .toast[hidden] { display: none; }
+
+/* ---- Guru (admin Guru tab + guru.html) -------------------------------- */
+/* Read-only assignment chips inside a table cell — no button, no gap below. */
+.chip-list--tight { margin-bottom: 0; gap: 0.35rem; justify-content: flex-end; }
+.chip--static { padding: 0.3rem 0.75rem; font-size: 0.8rem; }
+@media (min-width: 761px) { .chip-list--tight { justify-content: flex-start; } }
+/* Same look as the inline-styled h3 sub-heads already used in admin modals. */
+.modal__subhead { font-size: 0.86rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); margin: 1rem 0 0.5rem; }
