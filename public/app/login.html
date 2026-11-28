@@ -33,11 +33,23 @@
 
   <p class="login-frame-note">Bayangkan skrin ini di telefon setiap ibu bapa pelajar anda.</p>
 
-  <div class="login-grid">
+  <p class="login-notice" id="login-notice" role="status" hidden></p>
+
+  <div class="login-grid login-grid--3">
     <section class="login-card">
       <h2>Admin</h2>
       <p>Urus rekod pelajar, markah, hafazan dan tetapan madrasah.</p>
       <button class="btn" id="btn-admin-login" type="button">Masuk sebagai Admin</button>
+    </section>
+
+    <section class="login-card">
+      <h2>Guru</h2>
+      <p>Ambil kehadiran, masukkan markah dan rekod hafazan untuk kelas anda.</p>
+      <div class="field">
+        <label for="guru-select">Nama Guru</label>
+        <select id="guru-select"></select>
+      </div>
+      <button class="btn" id="btn-guru-login" type="button">Masuk sebagai Guru</button>
     </section>
 
     <section class="login-card">
@@ -70,6 +82,40 @@ document.addEventListener("DOMContentLoaded", () => {
       opt.textContent = `${studentDisplayName(student)} (${student.className})`;
       select.appendChild(opt);
     });
+
+  // Active gurus only — a tidak aktif guru simply isn't an option.
+  const guruSelect = document.getElementById("guru-select");
+  const activeGurus = getActiveTeachers(state).slice().sort((a, b) => a.name.localeCompare(b.name));
+  activeGurus.forEach((t) => {
+    const opt = document.createElement("option");
+    opt.value = t.id;
+    opt.textContent = `${t.name} (@${t.username})`;
+    guruSelect.appendChild(opt);
+  });
+  const guruBtn = document.getElementById("btn-guru-login");
+  if (!activeGurus.length) {
+    const opt = document.createElement("option");
+    opt.textContent = "Tiada guru aktif";
+    guruSelect.appendChild(opt);
+    guruSelect.disabled = true;
+    guruBtn.disabled = true;
+  }
+  guruBtn.addEventListener("click", () => {
+    const teacherId = guruSelect.value;
+    const fresh = loadState();
+    const t = getTeacher(fresh, teacherId);
+    if (!t || t.status !== "aktif") { window.location.reload(); return; }
+    setSession({ role: "guru", teacherId });
+    window.location.href = "guru.html";
+  });
+
+  // Why we landed here, when a guru session was ended for them.
+  const reason = new URLSearchParams(window.location.search).get("keluar");
+  if (reason === "guru-tidak-aktif") {
+    const notice = document.getElementById("login-notice");
+    notice.textContent = "Sesi guru anda telah ditamatkan kerana akaun guru ini tidak lagi aktif. Sila hubungi admin.";
+    notice.hidden = false;
+  }
 
   document.getElementById("btn-admin-login").addEventListener("click", () => {
     setSession({ role: "admin" });

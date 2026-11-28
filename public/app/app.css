@@ -859,3 +859,22 @@ thead .register-name { background: var(--parchment-dim); z-index: 3; }
 @media (min-width: 761px) { .chip-list--tight { justify-content: flex-start; } }
 /* Same look as the inline-styled h3 sub-heads already used in admin modals. */
 .modal__subhead { font-size: 0.86rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); margin: 1rem 0 0.5rem; }
+
+/* Login with three role cards: stack on phones, 2-up on tablets (the
+   third wraps full-width), 3-up on desktop. */
+@media (min-width: 640px) { .login-grid--3 > :last-child { grid-column: 1 / -1; } }
+@media (min-width: 1000px) {
+  .login-grid--3 { grid-template-columns: repeat(3, 1fr); max-width: 1080px; }
+  .login-grid--3 > :last-child { grid-column: auto; }
+}
+.login-notice {
+  max-width: 46ch;
+  margin: 0;
+  padding: 0.6rem 0.9rem;
+  border-radius: 6px;
+  border: 1px solid rgba(156, 61, 38, 0.3);
+  background: rgba(156, 61, 38, 0.08);
+  color: var(--error);
+  font-size: 0.88rem;
+}
+.login-notice[hidden] { display: none; }

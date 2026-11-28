@@ -1263,3 +1263,17 @@ function guruCanEnterMark(state, teacher, student, examKey, subject) {
 function guruCanRecordHafazan(teacher, student) {
   return student.status === "aktif" && guruHalaqahIds(teacher).includes(student.halaqahId);
 }
+
+// Ends the tab's guru session and returns to login when its guru is
+// gone or tidak aktif. Returns the (still active) guru otherwise.
+// Called on guru page load, before every guru save, and on the
+// cross-tab `storage` event — so an admin deactivating a guru in
+// another tab logs that guru out at once, not only on their next save.
+function requireActiveGuru(state) {
+  const t = getSessionGuru(state);
+  if (t) return t;
+  const session = getSession();
+  clearSession();
+  window.location.replace(session && session.role === "guru" ? "login.html?keluar=guru-tidak-aktif" : "login.html");
+  return null;
+}
