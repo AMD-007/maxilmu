@@ -40,11 +40,44 @@ const FEATURES = {
 // field — a fee type already referenced by a ledger entry can't be
 // deleted outright, only deactivated (see removeOrDeactivateFeeType()
 // in admin.html), same rule as students.
+// v7 -> v8: optional GURU role (demo only — no real auth):
+//   1. settings.teachers [{id, name, username, status, roles,
+//      assignments}] — see TEACHER_STATUSES and the guru helpers below.
+//      Gurus are referenced by id everywhere, never by typed name.
+//   2. settings.halaqah [{id, name}] + student.halaqahId — a hafazan
+//      group, deliberately separate from the academic className.
+//   3. Every attendance / hafazan entry carries enteredBy (teacher id
+//      or "admin") + enteredAt; exam marks carry the same pair in a
+//      parallel record.markMeta[period][subject] so marks stay plain
+//      numbers for every existing reader.
+//   4. settings.examSittings — per-sitting draf/terbit (lock+publish).
 // Bumping the key means any v5/v6 blob in a returning browser is
 // simply ignored rather than read and misinterpreted (same rationale
 // as every previous version bump in this file).
-const STORAGE_KEY = "maxilmu_demo_state_v7";
+const STORAGE_KEY = "maxilmu_demo_state_v8";
+// Older keys are removed on load/reset so a returning browser doesn't
+// keep a dead v7 blob around forever.
+const LEGACY_STORAGE_KEYS = ["maxilmu_demo_state_v5", "maxilmu_demo_state_v6", "maxilmu_demo_state_v7"];
 const SESSION_KEY = "maxilmu_demo_session_v1";
+
+// Guru status values exactly as the spec names them (note: a space,
+// not the student's hyphenated "tidak-aktif").
+const TEACHER_STATUSES = {
+  aktif: { label: "Aktif" },
+  "tidak aktif": { label: "Tidak Aktif" },
+};
+
+// Who an entry is attributed to when the admin (not a guru) keys it in.
+const ADMIN_ACTOR = "admin";
+
+// draf = gurus may still edit, parents can't see it.
+// terbit = locked for gurus AND visible to parents. One combined
+// state, not two flags: a sitting parents can see but gurus can still
+// change would show parents numbers that silently move.
+const SITTING_STATUSES = {
+  draf: { label: "Draf" },
+  terbit: { label: "Diterbitkan" },
+};
 
 // The single academic year every new record is stamped with at
 // creation time (see snapshotFields() below). Tier 1 has no UI to
@@ -212,12 +245,121 @@ function capUnresolvedAbsences(log, keep) {
   return log.map((e) => (e.status === "tidak-hadir" && !keepDates.has(e.date)) ? { ...e, status: "hadir" } : e);
 }
 
+// Seed authorship, applied once to the finished seed (instead of
+// hand-annotating ~1,000 generated rows). The story it tells:
+//   - Ustaz Rahim was Tahfiz 1's class guru and halaqah A's guru until
+//     he retired at the end of May 2026 — his records stay, still
+//     attributed to him.
+//   - From June, Ustaz Ahmad took Tahfiz 1 (Bahasa Arab + Pendidikan
+//     Islam) and Ustaz Hakim took halaqah A.
+//   - Everything else (other classes, other subjects, halaqah B) was
+//     keyed in by the office.
+const SEED_HANDOVER_DATE = "2026-06-01";
+const SEED_GURU_SUBJECTS = ["Bahasa Arab", "Pendidikan Islam"];
+// Stamped at 08:30 Malaysia time on the record's own date — a plausible
+// "keyed in that morning" value, not a real audit trail.
+function seedEnteredAt(date) {
+  return `${date}T08:30:00+08:00`;
+}
+const SEED_MARK_DATES = { awal: "2026-03-20", pertengahan: "2026-06-19", akhir: "2026-11-20" };
+
+function seedAuthorship(state) {
+  state.students.forEach((s) => {
+    const isT1 = (cls) => cls === "Tahfiz 1";
+    s.attendanceLog.forEach((e) => {
+      e.enteredBy = isT1(e.classAtTime) ? (e.date < SEED_HANDOVER_DATE ? "g_rahim" : "g_ahmad") : ADMIN_ACTOR;
+      e.enteredAt = seedEnteredAt(e.date);
+    });
+    s.hafazanLog.forEach((e) => {
+      e.enteredBy = s.halaqahId === "hq_a" ? (e.date < SEED_HANDOVER_DATE ? "g_rahim" : "g_hakim") : ADMIN_ACTOR;
+      e.enteredAt = seedEnteredAt(e.date);
+    });
+    s.examRecords.forEach((r) => {
+      r.markMeta = { awal: {}, pertengahan: {}, akhir: {} };
+      EXAM_PERIODS.forEach((exam) => {
+        const date = SEED_MARK_DATES[exam.key];
+        Object.keys(r.marks[exam.key]).forEach((subj) => {
+          let by = ADMIN_ACTOR;
+          if (isT1(r.classAtTime) && SEED_GURU_SUBJECTS.includes(subj)) {
+            by = date < SEED_HANDOVER_DATE ? "g_rahim" : "g_ahmad";
+          }
+          r.markMeta[exam.key][subj] = { enteredBy: by, enteredAt: seedEnteredAt(date) };
+        });
+      });
+    });
+  });
+  return state;
+}
+
+// Two extra Tahfiz 1 students: without them Ustaz Ahmad's class would
+// show a single active student (s4 is tidak-aktif), which makes the
+// guru demo look empty.
+function seedExtraTahfiz1Student(id, name, parentName, phone, halaqahId, attendanceSeed, keep, marks, hafazan) {
+  const className = "Tahfiz 1";
+  return {
+    id, name, className, halaqahId,
+    parentName,
+    parentPhone: phone,  // demo-only — not a real number
+    status: "aktif",
+    statusReason: "",
+    examRecords: [{ id: `er_${id}_2026`, academicYear: CURRENT_ACADEMIC_YEAR, classAtTime: className, marks }],
+    attendanceLog: stampSnapshot(capUnresolvedAbsences(generateAttendanceLog(`a_${id}`, "2026-01-05", seedAttendanceEnd(), 92, attendanceSeed, null), keep), className),
+    hafazanLog: stampSnapshot(hafazan, className),
+    fees: { ledger: stampSnapshot([
+      { id: `f_${id}a`, date: "2026-07-05", type: "charge", feeTypeId: "ft_bulanan", amount: 50, note: "Julai 2026" },
+      { id: `f_${id}b`, date: "2026-07-09", type: "payment", amount: 50, note: "" },
+    ], className) },
+  };
+}
+
 // ── Seed data — replaced entirely once an admin edits anything;
 //    exists only so the demo has something to show on first load ──
 function defaultState() {
+  return seedAuthorship(baseSeedState());
+}
+
+function baseSeedState() {
   const attendanceEnd = seedAttendanceEnd();
   return {
     settings: {
+      // Gurus — see TEACHER_STATUSES. Assignments are either a class +
+      // one subject, or a halaqah.
+      // shortcut: assignment classId holds the class NAME ("Tahfiz 1"),
+      // since this demo has no class registry (student.className is the
+      // only class key). The Firebase version needs a real class
+      // registry with stable ids because the yearly naik kelas rollover
+      // moves every student to a new class — name-keyed assignments
+      // would silently point at the wrong cohort after promotion.
+      teachers: [
+        {
+          id: "g_ahmad", name: "Ustaz Ahmad", username: "ahmad", status: "aktif", statusReason: "", roles: ["guru"],
+          assignments: [
+            { type: "kelas", classId: "Tahfiz 1", subject: "Bahasa Arab" },
+            { type: "kelas", classId: "Tahfiz 1", subject: "Pendidikan Islam" },
+          ],
+        },
+        {
+          id: "g_hakim", name: "Ustaz Hakim", username: "hakim", status: "aktif", statusReason: "", roles: ["guru"],
+          assignments: [{ type: "halaqah", halaqahId: "hq_a" }],
+        },
+        {
+          id: "g_rahim", name: "Ustaz Rahim", username: "rahim", status: "tidak aktif", statusReason: "Bersara", roles: ["guru"],
+          assignments: [],
+        },
+      ],
+      // Hafazan groups — mixed across academic classes on purpose.
+      halaqah: [
+        { id: "hq_a", name: "Halaqah A" },
+        { id: "hq_b", name: "Halaqah B" },
+      ],
+      // Awal + Pertengahan already published (and therefore locked for
+      // gurus); Akhir is still a draft with only Ustaz Ahmad's marks in,
+      // so the demo can show guru enters -> admin publishes -> parent sees.
+      examSittings: [
+        { academicYear: CURRENT_ACADEMIC_YEAR, period: "awal", status: "terbit" },
+        { academicYear: CURRENT_ACADEMIC_YEAR, period: "pertengahan", status: "terbit" },
+        { academicYear: CURRENT_ACADEMIC_YEAR, period: "akhir", status: "draf" },
+      ],
       subjects: SITE_CONFIG.subjects.slice(),
       hafazan: { unit: "juz", total: 30 },
       attendance: { target: 90 },
@@ -246,12 +388,13 @@ function defaultState() {
         id: "s1",
         name: "Ahmad Danish bin Rosli",
         className,
+        halaqahId: "hq_a",
         parentName: "Rosli bin Ahmad",
         parentPhone: "60100000001",  // demo-only — not a real number
         status: "aktif",
         statusReason: "",
-        // As of "today" (1 Ogos 2026) Akhir Tahun hasn't happened yet —
-        // an exam period with no marks entered renders as "—", not 0.
+        // Akhir Tahun is still a draft sitting (see examSittings) with no
+        // marks for this class yet — an empty period renders as "—", not 0.
         examRecords: [{
           id: "er_s1_2026",
           academicYear: CURRENT_ACADEMIC_YEAR,
@@ -310,6 +453,7 @@ function defaultState() {
         id: "s2",
         name: "Nur Aisyah binti Zulkifli",
         className,
+        halaqahId: "hq_b",
         parentName: "Zulkifli bin Hassan",
         parentPhone: "60100000002",  // demo-only — not a real number
         status: "aktif",
@@ -350,6 +494,7 @@ function defaultState() {
         id: "s3",
         name: "Muhammad Haziq bin Yusof",
         className,
+        halaqahId: "hq_b",
         parentName: "Yusof bin Ibrahim",
         parentPhone: "60100000003",  // demo-only — not a real number
         status: "aktif",
@@ -400,6 +545,7 @@ function defaultState() {
         id: "s4",
         name: "Siti Maryam binti Ismail",
         className,
+        halaqahId: "hq_a",
         parentName: "Ismail bin Othman",
         parentPhone: "60100000004",  // demo-only — not a real number
         status: "tidak-aktif",
@@ -439,6 +585,7 @@ function defaultState() {
         id: "s5",
         name: "Amirul Hakim bin Zainal",
         className,
+        halaqahId: "hq_a",
         parentName: "Zainal bin Kassim",
         parentPhone: "60100000005",  // demo-only — not a real number
         status: "aktif",
@@ -450,7 +597,9 @@ function defaultState() {
           marks: {
             awal: { "Bahasa Melayu": 65, "Bahasa Inggeris": 57, "Bahasa Arab": 63, "Matematik": 53, "Sains": 55, "Sejarah": 60, "Pendidikan Islam": 72 },
             pertengahan: { "Bahasa Melayu": 70, "Bahasa Inggeris": 62, "Bahasa Arab": 68, "Matematik": 58, "Sains": 60, "Sejarah": 65, "Pendidikan Islam": 77 },
-            akhir: {},
+            // Draft Akhir sitting: only Ustaz Ahmad has keyed in his two
+            // subjects so far (see examSittings — not yet published).
+            akhir: { "Bahasa Arab": 72, "Pendidikan Islam": 81 },
           },
         }],
         attendanceLog: stampSnapshot(capUnresolvedAbsences(generateAttendanceLog("a5", "2026-01-05", attendanceEnd, 93, 50505, null), 6), className),
@@ -473,6 +622,7 @@ function defaultState() {
         id: "s6",
         name: "Nur Fatihah binti Rahman",
         className,
+        halaqahId: "hq_b",
         parentName: "Rahman bin Salleh",
         parentPhone: "60100000006",  // demo-only — not a real number
         status: "aktif",
@@ -504,6 +654,28 @@ function defaultState() {
         ], className) },
       };
       })(),
+      seedExtraTahfiz1Student("s7", "Muhammad Irfan bin Azman", "Azman bin Mokhtar", "60100000007", "hq_a", 70507, 3, {
+        awal: { "Bahasa Melayu": 68, "Bahasa Inggeris": 60, "Bahasa Arab": 64, "Matematik": 58, "Sains": 57, "Sejarah": 63, "Pendidikan Islam": 74 },
+        pertengahan: { "Bahasa Melayu": 72, "Bahasa Inggeris": 63, "Bahasa Arab": 69, "Matematik": 62, "Sains": 61, "Sejarah": 66, "Pendidikan Islam": 79 },
+        akhir: { "Bahasa Arab": 73, "Pendidikan Islam": 83 },
+      }, [
+        { id: "h7a", date: "2026-02-09", amount: 0.5, note: "" },
+        { id: "h7b", date: "2026-03-23", amount: 1, note: "Juz 2 selesai" },
+        { id: "h7c", date: "2026-05-04", amount: 0.5, note: "" },
+        { id: "h7d", date: "2026-06-22", amount: 1, note: "" },
+        { id: "h7e", date: "2026-07-27", amount: 1, note: "Juz 4 selesai" },
+      ]),
+      seedExtraTahfiz1Student("s8", "Nur Iman binti Kamal", "Kamal bin Yahya", "60100000008", "hq_b", 80508, 2, {
+        awal: { "Bahasa Melayu": 79, "Bahasa Inggeris": 72, "Bahasa Arab": 70, "Matematik": 74, "Sains": 71, "Sejarah": 75, "Pendidikan Islam": 84 },
+        pertengahan: { "Bahasa Melayu": 83, "Bahasa Inggeris": 76, "Bahasa Arab": 75, "Matematik": 78, "Sains": 74, "Sejarah": 79, "Pendidikan Islam": 87 },
+        akhir: { "Bahasa Arab": 78 },
+      }, [
+        { id: "h8a", date: "2026-01-26", amount: 0.5, note: "" },
+        { id: "h8b", date: "2026-03-09", amount: 0.5, note: "" },
+        { id: "h8c", date: "2026-04-20", amount: 1, note: "Juz 2 selesai" },
+        { id: "h8d", date: "2026-06-08", amount: 0.5, note: "" },
+        { id: "h8e", date: "2026-07-13", amount: 1, note: "" },
+      ]),
     ],
   };
 }
@@ -520,6 +692,11 @@ function isValidState(parsed) {
     && parsed.settings.attendance
     && typeof parsed.settings.attendance.target === "number"
     && Array.isArray(parsed.settings.feeTypes)
+    // v8: gurus, halaqah, exam sittings
+    && Array.isArray(parsed.settings.teachers)
+    && parsed.settings.teachers.every((t) => !!TEACHER_STATUSES[t.status] && Array.isArray(t.assignments))
+    && Array.isArray(parsed.settings.halaqah)
+    && Array.isArray(parsed.settings.examSittings)
     // v6 shape check: students carry examRecords (an array, not the
     // old single exams.{awal,pertengahan,akhir} blob — see the v5->v6
     // note near STORAGE_KEY), hafazanLog, attendanceLog, and a status.
@@ -531,10 +708,15 @@ function isValidState(parsed) {
     );
 }
 
+function removeLegacyState() {
+  try { LEGACY_STORAGE_KEYS.forEach((k) => localStorage.removeItem(k)); } catch (e) { /* ignore */ }
+}
+
 function loadState() {
   let raw = null;
   try {
     raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) removeLegacyState();
   } catch (e) {
     // localStorage can throw in locked-down/private-mode contexts —
     // fall back to an in-memory default rather than crashing the page.
@@ -573,6 +755,7 @@ function saveState(state) {
 // point at a student id that no longer exists post-reset.
 function resetDemoData() {
   try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
+  removeLegacyState();
   clearSession();
   return loadState();
 }
@@ -804,10 +987,67 @@ function getCurrentExamRecord(student) {
 function ensureCurrentExamRecord(student) {
   let record = getCurrentExamRecord(student);
   if (!record) {
-    record = { id: uid("er"), academicYear: CURRENT_ACADEMIC_YEAR, classAtTime: student.className, marks: { awal: {}, pertengahan: {}, akhir: {} } };
+    record = { id: uid("er"), academicYear: CURRENT_ACADEMIC_YEAR, classAtTime: student.className, marks: { awal: {}, pertengahan: {}, akhir: {} }, markMeta: { awal: {}, pertengahan: {}, akhir: {} } };
     student.examRecords.push(record);
   }
+  if (!record.markMeta) record.markMeta = { awal: {}, pertengahan: {}, akhir: {} };
   return record;
+}
+
+// The single write path for one exam mark (admin grid and guru page
+// both go through here). value === null clears the mark. Only stamps
+// enteredBy/enteredAt when the value actually changes, so re-saving a
+// whole grid doesn't re-attribute every untouched mark to whoever
+// pressed Simpan.
+// shortcut: keeps the LAST editor only — the real version keeps a full
+// edit history (who changed which mark from what to what, and when).
+// Returns false (and writes nothing) if a guru tries to write into a
+// published (locked) sitting; the admin is never blocked.
+function setExamMark(state, student, examKey, subject, value, enteredBy) {
+  if (enteredBy !== ADMIN_ACTOR && isSittingPublished(state, CURRENT_ACADEMIC_YEAR, examKey)) return false;
+  const record = ensureCurrentExamRecord(student);
+  const has = Object.prototype.hasOwnProperty.call(record.marks[examKey], subject);
+  if (value === null) {
+    if (!has) return true;
+    delete record.marks[examKey][subject];
+    delete record.markMeta[examKey][subject];
+    return true;
+  }
+  const clean = Math.max(0, Math.min(100, Math.round(Number(value))));
+  if (has && record.marks[examKey][subject] === clean) return true;
+  record.marks[examKey][subject] = clean;
+  record.markMeta[examKey][subject] = { enteredBy, enteredAt: new Date().toISOString() };
+  return true;
+}
+
+function getMarkMeta(record, examKey, subject) {
+  return (record && record.markMeta && record.markMeta[examKey] && record.markMeta[examKey][subject]) || null;
+}
+
+// ── Exam sittings (Kunci & Terbitkan) ─────────────────────────────
+// A sitting with no row yet is a draft: nothing is published until an
+// admin explicitly says so.
+function getSitting(state, academicYear, period) {
+  return state.settings.examSittings.find((s) => s.academicYear === academicYear && s.period === period) || null;
+}
+function isSittingPublished(state, academicYear, period) {
+  const s = getSitting(state, academicYear, period);
+  return !!s && s.status === "terbit";
+}
+function setSittingStatus(state, academicYear, period, status) {
+  let s = getSitting(state, academicYear, period);
+  if (!s) {
+    s = { academicYear, period, status: "draf" };
+    state.settings.examSittings.push(s);
+  }
+  s.status = status;
+  s.changedAt = new Date().toISOString();
+}
+
+// Same as examAverage(), but only for a published sitting — what the
+// parent view uses for its stat tile and Purata row.
+function publishedExamAverage(state, student, examKey, academicYear = CURRENT_ACADEMIC_YEAR) {
+  return isSittingPublished(state, academicYear, examKey) ? examAverage(state, student, examKey, academicYear) : null;
 }
 
 // Average across the active subject list for one exam sitting in one
@@ -828,6 +1068,20 @@ function examAverage(state, student, examKey, academicYear = CURRENT_ACADEMIC_YE
 function sortedHafazanLog(student, order) {
   const list = student.hafazanLog.slice().sort((a, b) => a.date.localeCompare(b.date));
   return order === "desc" ? list.reverse() : list;
+}
+
+// The single write path for a new hafazan/tasmik entry (admin modal
+// and guru page). Validates here too, not just in the UI.
+function addHafazanEntry(student, { date, amount, note }, enteredBy) {
+  const n = Number(amount);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "") || !(n > 0) || n > 114) return null; // 114 = surah count, the largest unit
+  const entry = {
+    id: uid("h"), date, amount: Math.round(n * 100) / 100, note: String(note || "").trim().slice(0, 120),
+    ...snapshotFields(student),
+    enteredBy, enteredAt: new Date().toISOString(),
+  };
+  student.hafazanLog.push(entry);
+  return entry;
 }
 
 function getHafazanTotal(student) {
@@ -865,19 +1119,28 @@ function getAttendanceForDate(student, date) {
 // admin-facing screens (never a raw push to attendanceLog elsewhere),
 // so a re-save of an already-recorded day updates in place instead of
 // creating a duplicate row for that date.
-function setAttendanceForDate(student, date, status, note) {
+// enteredBy is a teacher id or ADMIN_ACTOR; it (and enteredAt) only
+// change when the status/note actually changes, so re-saving a whole
+// class doesn't re-attribute untouched days.
+// shortcut: last editor only — the real version keeps full edit history.
+function setAttendanceForDate(student, date, status, note, enteredBy) {
   const existing = getAttendanceForDate(student, date);
+  const cleanNote = status === "bersurat" ? (note || "") : "";
   if (existing) {
     // Correcting an already-recorded day (e.g. resolving to
     // "bersurat") is not the same as moving it to a different day —
     // its academicYear/classAtTime were fixed when the row was first
     // created and must NOT be re-stamped here.
+    if (existing.status === status && existing.note === cleanNote) return;
     existing.status = status;
-    existing.note = status === "bersurat" ? (note || "") : "";
+    existing.note = cleanNote;
+    existing.enteredBy = enteredBy;
+    existing.enteredAt = new Date().toISOString();
   } else {
     student.attendanceLog.push({
-      id: uid("att"), date, status, note: status === "bersurat" ? (note || "") : "",
+      id: uid("att"), date, status, note: cleanNote,
       ...snapshotFields(student),
+      enteredBy, enteredAt: new Date().toISOString(),
     });
   }
 }
@@ -937,3 +1200,66 @@ function getAttendanceAverage(student) {
   return Math.round(points.reduce((sum, p) => sum + p.rate, 0) / points.length);
 }
 
+// ── Gurus (teachers) ─────────────────────────────────────────────
+// Always looked up by id. A tidak-aktif guru stays in settings.teachers
+// forever so every record they entered still resolves to their name.
+function getTeacher(state, id) {
+  return state.settings.teachers.find((t) => t.id === id) || null;
+}
+function getActiveTeachers(state) {
+  return state.settings.teachers.filter((t) => t.status === "aktif");
+}
+function getHalaqah(state, id) {
+  return state.settings.halaqah.find((h) => h.id === id) || null;
+}
+
+// Name for a "Direkod oleh …" line: the guru's name (even if they've
+// since left), or null for admin-entered / unknown entries, which show
+// no attribution at all.
+function enteredByName(state, enteredBy) {
+  if (!enteredBy || enteredBy === ADMIN_ACTOR) return null;
+  const t = getTeacher(state, enteredBy);
+  return t ? t.name : null;
+}
+
+function assignmentLabel(state, a) {
+  if (a.type === "kelas") return `${a.classId} · ${a.subject}`;
+  const h = getHalaqah(state, a.halaqahId);
+  return h ? h.name : "Halaqah (dipadam)";
+}
+
+// The guru for the current tab's session, or null if the session isn't
+// a guru session, or that guru no longer exists / is tidak aktif.
+// Every guru page load AND every guru save goes through this, against
+// freshly-loaded state, so deactivation takes effect immediately.
+function getSessionGuru(state) {
+  const session = getSession();
+  if (!session || session.role !== "guru") return null;
+  const t = getTeacher(state, session.teacherId);
+  return t && t.status === "aktif" ? t : null;
+}
+
+// Permission checks — the guru page uses these both to decide what to
+// show and to re-check right before writing.
+// shortcut: client-side only. Anyone can read localStorage in devtools;
+// the Firebase version must enforce the same rules in Security Rules.
+function guruClasses(teacher) {
+  return Array.from(new Set(teacher.assignments.filter((a) => a.type === "kelas").map((a) => a.classId))).sort();
+}
+function guruSubjectsFor(teacher, classId) {
+  return teacher.assignments.filter((a) => a.type === "kelas" && a.classId === classId).map((a) => a.subject);
+}
+function guruHalaqahIds(teacher) {
+  return teacher.assignments.filter((a) => a.type === "halaqah").map((a) => a.halaqahId);
+}
+function guruCanTakeAttendance(teacher, classId) {
+  return guruClasses(teacher).includes(classId);
+}
+function guruCanEnterMark(state, teacher, student, examKey, subject) {
+  return student.status === "aktif"
+    && guruSubjectsFor(teacher, student.className).includes(subject)
+    && !isSittingPublished(state, CURRENT_ACADEMIC_YEAR, examKey);
+}
+function guruCanRecordHafazan(teacher, student) {
+  return student.status === "aktif" && guruHalaqahIds(teacher).includes(student.halaqahId);
+}

@@ -634,8 +634,7 @@
       modalRoot.querySelectorAll("input[data-subject]").forEach((input) => {
         const examKey = input.dataset.exam;
         const subj = input.dataset.subject;
-        if (input.value === "") { delete record.marks[examKey][subj]; return; }
-        record.marks[examKey][subj] = Math.max(0, Math.min(100, Number(input.value)));
+        setExamMark(state, student, examKey, subj, input.value === "" ? null : input.value, ADMIN_ACTOR);
       });
       persist();
       renderStudentTable();
@@ -727,11 +726,10 @@
         const date = document.getElementById("hafazan-entry-date").value;
         const amount = Number(document.getElementById("hafazan-entry-amount").value);
         const note = document.getElementById("hafazan-entry-note").value.trim();
-        if (!date || !amount || amount <= 0) {
+        if (!date || !amount || amount <= 0 || !addHafazanEntry(student, { date, amount, note }, ADMIN_ACTOR)) {
           alert("Sila isi tarikh dan jumlah tambahan yang sah.");
           return;
         }
-        student.hafazanLog.push({ id: uid("h"), date, amount, note, ...snapshotFields(student) });
         persist();
         renderModalBody();
         renderStudentTable();
@@ -1074,7 +1072,7 @@
       // wipe the admin's Rekod & Semakan note, so leave that record
       // alone entirely instead.
       if (ambilDraft[s.id] === "bersurat") return;
-      setAttendanceForDate(s, ambilDraftDate, ambilDraft[s.id], null);
+      setAttendanceForDate(s, ambilDraftDate, ambilDraft[s.id], null, ADMIN_ACTOR);
     });
     persist();
     ambilDirtyFlag = false;
@@ -1237,7 +1235,7 @@
     document.getElementById("popover-cancel").addEventListener("click", closeCellPopover);
     document.getElementById("popover-confirm").addEventListener("click", () => {
       const note = document.getElementById("popover-note-input").value.trim();
-      setAttendanceForDate(student, date, "bersurat", note);
+      setAttendanceForDate(student, date, "bersurat", note, ADMIN_ACTOR);
       persist();
       closeCellPopover();
       renderRegisterGrid();
