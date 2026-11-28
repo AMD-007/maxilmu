@@ -1014,9 +1014,19 @@ function ensureCurrentExamRecord(student) {
 // shortcut: keeps the LAST editor only — the real version keeps a full
 // edit history (who changed which mark from what to what, and when).
 // Returns false (and writes nothing) if a guru tries to write into a
-// published (locked) sitting; the admin is never blocked.
+// published (locked) sitting (the admin is never blocked), or if the
+// value isn't a whole number 0-100 — rejected, never clamped/rounded.
+// Callers validate first with isValidMark() so they can show
+// MARK_INVALID_MESSAGE before anything is written.
+const MARK_INVALID_MESSAGE = "Markah mesti nombor bulat 0 hingga 100.";
+function isValidMark(value) {
+  if (typeof value === "string" && !/^\s*\d+\s*$/.test(value)) return false;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 0 && n <= 100;
+}
 function setExamMark(state, student, examKey, subject, value, enteredBy) {
   if (enteredBy !== ADMIN_ACTOR && isSittingPublished(state, CURRENT_ACADEMIC_YEAR, examKey)) return false;
+  if (value !== null && !isValidMark(value)) return false;
   const record = ensureCurrentExamRecord(student);
   const has = Object.prototype.hasOwnProperty.call(record.marks[examKey], subject);
   if (value === null) {
@@ -1025,7 +1035,7 @@ function setExamMark(state, student, examKey, subject, value, enteredBy) {
     delete record.markMeta[examKey][subject];
     return true;
   }
-  const clean = Math.max(0, Math.min(100, Math.round(Number(value))));
+  const clean = Number(value);
   if (has && record.marks[examKey][subject] === clean) return true;
   record.marks[examKey][subject] = clean;
   record.markMeta[examKey][subject] = { enteredBy, enteredAt: new Date().toISOString() };

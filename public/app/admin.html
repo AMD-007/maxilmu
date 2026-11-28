@@ -657,7 +657,7 @@
       const safeId = subj.replace(/[^a-z0-9]/gi, "_");
       const cells = EXAM_PERIODS.map((exam) => {
         const val = Object.prototype.hasOwnProperty.call(record.marks[exam.key], subj) ? record.marks[exam.key][subj] : "";
-        return `<td data-col="${exam.key}"><input type="number" min="0" max="100" class="mark-cell-input" id="mark_${exam.key}_${safeId}" data-exam="${exam.key}" data-subject="${escapeHtml(subj)}" value="${val}"></td>`;
+        return `<td data-col="${exam.key}"><input type="number" inputmode="numeric" min="0" max="100" step="1" class="mark-cell-input" id="mark_${exam.key}_${safeId}" data-exam="${exam.key}" data-subject="${escapeHtml(subj)}" value="${val}"></td>`;
       }).join("");
       return `
         <tr>
@@ -732,8 +732,20 @@
     });
 
     modalRoot.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeModal));
+    const markInputs = Array.from(modalRoot.querySelectorAll("input[data-subject]"));
+    markInputs.forEach((input) => input.addEventListener("input", () => input.removeAttribute("aria-invalid")));
     document.getElementById("btn-save-student").addEventListener("click", () => {
-      modalRoot.querySelectorAll("input[data-subject]").forEach((input) => {
+      // Validate the whole grid first — one bad cell saves nothing.
+      // validity.badInput catches "abc"/"1e" (value reads as "").
+      const bad = markInputs.filter((i) => i.validity.badInput || (i.value !== "" && !isValidMark(i.value)));
+      markInputs.forEach((i) => (bad.includes(i) ? i.setAttribute("aria-invalid", "true") : i.removeAttribute("aria-invalid")));
+      if (bad.length) {
+        showSitting(bad[0].dataset.exam); // phones show one sitting at a time
+        alert(MARK_INVALID_MESSAGE);
+        bad[0].focus();
+        return;
+      }
+      markInputs.forEach((input) => {
         const examKey = input.dataset.exam;
         const subj = input.dataset.subject;
         setExamMark(state, student, examKey, subj, input.value === "" ? null : input.value, ADMIN_ACTOR);

@@ -431,7 +431,7 @@
     const examKey = markSittingSelect.value;
     const inputs = Array.from(markList.querySelectorAll("[data-mark-student]"));
     const bad = inputs.find((i) => !i.validity.valid);
-    if (bad) { alert("Markah mesti nombor bulat 0 hingga 100."); bad.focus(); return; }
+    if (bad) { alert(MARK_INVALID_MESSAGE); bad.focus(); return; }
     const values = inputs.map((i) => ({ id: i.dataset.markStudent, value: i.value === "" ? null : Number(i.value) }));
     const saved = freshGuardedWrite(() => {
       if (isSittingPublished(state, CURRENT_ACADEMIC_YEAR, examKey)) { alert("Peperiksaan ini baru sahaja dikunci & diterbitkan oleh admin. Markah tidak boleh diubah lagi."); return false; }
