@@ -93,6 +93,13 @@
     return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
+  // "Direkod oleh Ustaz X" — only for guru-entered records (admin
+  // entries show nothing). A tidak aktif guru still shows their name.
+  function enteredByHtml(enteredBy) {
+    const name = enteredByName(state, enteredBy);
+    return name ? `<span class="entered-by">Direkod oleh ${escapeHtml(name)}</span>` : "";
+  }
+
   document.getElementById("parent-student-name").textContent = student.name;
   document.getElementById("parent-student-meta").textContent = `${student.className} · Ibu bapa: ${student.parentName}`;
 
@@ -139,7 +146,10 @@
     const bodyRows = activeSubjects.map((subj) => {
       const cells = EXAM_PERIODS.map((exam) => {
         const val = currentMarks[exam.key][subj];
-        return `<td data-label="${exam.label}">${typeof val === "number" ? val + "%" : '<span class="cell-muted">—</span>'}</td>`;
+        const meta = getMarkMeta(currentExamRecord, exam.key, subj);
+        return typeof val === "number"
+          ? `<td data-label="${exam.label}"><span class="cell-stack">${val}%${meta ? enteredByHtml(meta.enteredBy) : ""}</span></td>`
+          : `<td data-label="${exam.label}"><span class="cell-muted">—</span></td>`;
       }).join("");
       return `<tr><td data-label="Subjek">${escapeHtml(subj)}</td>${cells}</tr>`;
     }).join("");
@@ -211,7 +221,7 @@
             <tr>
               <td data-label="Minggu (Tarikh)">${formatDate(p.entry.date)}</td>
               <td data-label="Tambahan">+${p.entry.amount} ${hafazanUnitLabel(hafazan.unit, p.entry.amount)}</td>
-              <td data-label="Catatan">${p.entry.note ? escapeHtml(p.entry.note) : '<span class="cell-muted">—</span>'}</td>
+              <td data-label="Catatan"><span class="cell-stack">${p.entry.note ? escapeHtml(p.entry.note) : '<span class="cell-muted">—</span>'}${enteredByHtml(p.entry.enteredBy)}</span></td>
               <td data-label="Terkumpul">${p.cumulative}</td>
             </tr>
           `).join("")}

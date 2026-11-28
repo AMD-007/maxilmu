@@ -944,3 +944,7 @@ thead .register-name { background: var(--parchment-dim); z-index: 3; }
 
 /* "Direkod oleh Ustaz X" — guru attribution on parent + guru views. */
 .entered-by { display: block; font-size: 0.72rem; font-weight: 400; color: var(--ink-soft); white-space: normal; }
+/* A value + its small attribution line, kept together as one block so
+   the stacked-card layout keeps them right-aligned as a pair. */
+.cell-stack { display: inline-block; }
+@media (max-width: 760px) { .stack-table .cell-stack { text-align: right; } }
