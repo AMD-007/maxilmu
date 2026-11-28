@@ -1,4 +1,4 @@
-// Usage: node shoot.js <outDir> [filter]
+// Usage: node shoot.js <outDir> [filter] [widths e.g. 375,1280]
 // Screenshots every page/state at every viewport and writes audit.json
 // (horizontal overflow, clipped text, small inputs, small tap targets).
 const path = require("path"), fs = require("fs");
@@ -6,6 +6,7 @@ const { chromium } = require(path.join(process.env.APPDATA, "npm/node_modules/@p
 const BASE = "http://localhost:8787";
 const OUT = process.argv[2];
 const FILTER = process.argv[3] ? new RegExp(process.argv[3]) : null;
+const WIDTHS = process.argv[4] ? process.argv[4].split(",").map(Number) : null;
 const VIEWPORTS = [
   [320, 640], [375, 812], [414, 896], [768, 1024], [1024, 768], [1280, 800], [1366, 768], [1440, 900], [1920, 1080],
   [812, 375, "land"],
@@ -29,7 +30,9 @@ const STATES = [
     await p.waitForSelector("#miniHeader.is-visible");
     await p.waitForTimeout(450); // .35s slide-in transition
   } },
+  { name: "index-form-errors", url: "/index.html", act: async (p) => { await p.locator("#contact-form").scrollIntoViewIfNeeded(); await p.click('#contact-form button[type="submit"]'); } },
   { name: "404", url: "/nope-404", full: true },
+  { name: "404-app", url: "/app/salah", full: true },
   { name: "login", url: "/app/login.html", full: true },
   { name: "admin-pelajar", session: ADMIN, url: "/app/admin.html", full: true },
   { name: "admin-kehadiran-ambil", session: ADMIN, url: "/app/admin.html", full: true, act: (p) => clickTab(p, "kehadiran") },
@@ -40,6 +43,8 @@ const STATES = [
   { name: "admin-modal-keputusan", session: ADMIN, url: "/app/admin.html", act: (p) => rowBtn(p, '[data-edit-results="s7"]') },
   { name: "admin-modal-kehadiran", session: ADMIN, url: "/app/admin.html", act: (p) => rowBtn(p, '[data-edit-attendance="s7"]') },
   { name: "admin-modal-hafazan", session: ADMIN, url: "/app/admin.html", act: (p) => rowBtn(p, '[data-edit-hafazan="s7"]') },
+  { name: "admin-modal-tambah-pelajar", session: ADMIN, url: "/app/admin.html", act: async (p) => { await p.click("#btn-add-student"); await p.click('#student-form button[type="submit"]'); await p.selectOption("#sf-class", "__new__"); } },
+  { name: "admin-modal-edit-pelajar", session: ADMIN, url: "/app/admin.html", act: (p) => rowBtn(p, '[data-edit-student="s7"]') },
   { name: "admin-modal-status", session: ADMIN, url: "/app/admin.html", act: (p) => rowBtn(p, '[data-edit-status="s7"]') },
   { name: "admin-modal-yuran", session: ADMIN, url: "/app/admin.html", act: async (p) => { await clickTab(p, "yuran"); await rowBtn(p, "#yuran-table-body button"); } },
   { name: "admin-modal-urus-tugasan", session: ADMIN, url: "/app/admin.html", act: async (p) => { await clickTab(p, "guru"); await rowBtn(p, '[data-guru-assign="g_ahmad"]'); } },
@@ -96,6 +101,7 @@ function audit(mobile) {
   for (const [w, h, tag] of VIEWPORTS) {
     const mobile = w < 1024 || tag === "land";
     const vpName = tag ? `${w}x${h}-landscape` : `${w}`;
+    if (WIDTHS && (tag || !WIDTHS.includes(w))) continue;
     for (const st of STATES) {
       if (FILTER && !FILTER.test(st.name)) continue;
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: 1 });
