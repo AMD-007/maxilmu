@@ -45,7 +45,10 @@
   <section class="portal-panel is-active" data-panel="pelajar" id="panel-pelajar">
     <div class="panel-head">
       <h1>Pelajar</h1>
-      <span class="panel-head__meta" id="student-count-meta"></span>
+      <div class="panel-head__actions">
+        <span class="panel-head__meta" id="student-count-meta"></span>
+        <button class="btn btn--small" id="btn-add-student" type="button">Tambah Pelajar</button>
+      </div>
     </div>
 
     <div class="stat-grid" id="dashboard-stats"></div>
@@ -446,6 +449,7 @@
             <div class="progress-bar"><div class="progress-bar__fill" style="width:${hafazanPct}%"></div></div>
           </td>
           <td class="cell-actions" data-label="">
+            <button class="btn btn--secondary btn--small" data-edit-student="${student.id}" type="button">Edit</button>
             <button class="btn btn--secondary btn--small" data-edit-results="${student.id}" type="button">Keputusan</button>
             <button class="btn btn--secondary btn--small" data-edit-attendance="${student.id}" type="button">Kehadiran</button>
             <button class="btn btn--secondary btn--small" data-edit-hafazan="${student.id}" type="button">Hafazan</button>
@@ -455,6 +459,9 @@
         body.appendChild(tr);
       });
 
+    body.querySelectorAll("[data-edit-student]").forEach((btn) => {
+      btn.addEventListener("click", () => openStudentFormModal(btn.dataset.editStudent));
+    });
     body.querySelectorAll("[data-edit-results]").forEach((btn) => {
       btn.addEventListener("click", () => openResultsModal(btn.dataset.editResults));
     });
@@ -470,6 +477,132 @@
   }
 
   document.getElementById("toggle-show-inactive").addEventListener("change", renderStudentTable);
+  document.getElementById("btn-add-student").addEventListener("click", () => openStudentFormModal(null));
+
+  // ================================================================
+  // TAMBAH / EDIT PELAJAR — one modal for both. A new student starts
+  // with no records at all. Editing never touches existing records:
+  // each already carries its own classAtTime, so a class change only
+  // affects records created from now on.
+  // ================================================================
+  const NEW_CLASS = "__new__";
+  const PARENT_PHONE_RE = /^601\d{8,9}$/; // 601X + 7-8 digits, no + or spaces
+  function openStudentFormModal(studentId) {
+    const student = studentId ? getStudent(state, studentId) : null;
+    if (studentId && !student) return;
+    const classes = getClassList(state, true);
+    const v = student || { name: "", className: classes[0] || "", halaqahId: "", parentName: "", parentPhone: "" };
+
+    openModal(`
+      <div class="modal__head">
+        <h2>${student ? `Edit Pelajar — ${escapeHtml(student.name)}` : "Tambah Pelajar"}</h2>
+        <button class="modal__close" type="button" data-close aria-label="Tutup">&times;</button>
+      </div>
+      <form id="student-form" novalidate>
+        <div class="field">
+          <label for="sf-name">Nama</label>
+          <input type="text" id="sf-name" maxlength="80" required autocomplete="off" value="${escapeHtml(v.name)}" aria-describedby="sf-name-err">
+          <span class="field-error" id="sf-name-err"></span>
+        </div>
+        <div class="field">
+          <label for="sf-class">Kelas</label>
+          <select id="sf-class">
+            ${classes.map((c) => `<option value="${escapeHtml(c)}" ${c === v.className ? "selected" : ""}>${escapeHtml(c)}</option>`).join("")}
+            <option value="${NEW_CLASS}" ${classes.length ? "" : "selected"}>Kelas baharu…</option>
+          </select>
+        </div>
+        <div class="field" id="sf-newclass-field" hidden>
+          <label for="sf-newclass">Nama kelas baharu</label>
+          <input type="text" id="sf-newclass" maxlength="40" autocomplete="off" placeholder="Cth: Tahfiz 4" aria-describedby="sf-newclass-err">
+          <span class="field-error" id="sf-newclass-err"></span>
+        </div>
+        ${student ? '<p class="card__hint">Menukar kelas hanya terpakai untuk rekod baharu — rekod sedia ada kekal di bawah kelas asal.</p>' : ""}
+        <div class="field">
+          <label for="sf-halaqah">Halaqah</label>
+          <select id="sf-halaqah">
+            <option value="">Tiada</option>
+            ${state.settings.halaqah.map((h) => `<option value="${escapeHtml(h.id)}" ${h.id === v.halaqahId ? "selected" : ""}>${escapeHtml(h.name)}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field">
+          <label for="sf-parent">Nama Ibu Bapa</label>
+          <input type="text" id="sf-parent" maxlength="80" autocomplete="off" value="${escapeHtml(v.parentName)}">
+        </div>
+        <div class="field">
+          <label for="sf-phone">No. Telefon Ibu Bapa</label>
+          <input type="tel" id="sf-phone" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="601XXXXXXXX" value="${escapeHtml(v.parentPhone)}" aria-describedby="sf-phone-err">
+          <span class="field-error" id="sf-phone-err"></span>
+        </div>
+        <div class="modal__actions">
+          <button class="btn btn--ghost btn--small" type="button" data-close style="color:var(--ink); border-color: rgba(43,35,24,0.2);">Batal</button>
+          <button class="btn btn--small" type="submit">${student ? "Simpan" : "Tambah Pelajar"}</button>
+        </div>
+      </form>
+    `);
+    modalRoot.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeModal));
+
+    const form = document.getElementById("student-form");
+    const classSelect = document.getElementById("sf-class");
+    const newClassField = document.getElementById("sf-newclass-field");
+    const syncNewClass = () => { newClassField.hidden = classSelect.value !== NEW_CLASS; };
+    classSelect.addEventListener("change", syncNewClass);
+    syncNewClass();
+
+    function setError(inputId, msg) {
+      const input = document.getElementById(inputId);
+      if (msg) input.setAttribute("aria-invalid", "true"); else input.removeAttribute("aria-invalid");
+      document.getElementById(`${inputId}-err`).textContent = msg;
+    }
+    ["sf-name", "sf-newclass", "sf-phone"].forEach((id) => document.getElementById(id).addEventListener("input", () => setError(id, "")));
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const clean = (id) => document.getElementById(id).value.trim().replace(/\s+/g, " ");
+      const name = clean("sf-name");
+      const isNewClass = classSelect.value === NEW_CLASS;
+      const typedClass = clean("sf-newclass");
+      // A typed name matching an existing class (any case) joins it
+      // instead of creating a near-duplicate like "tahfiz 1".
+      const className = isNewClass ? (classes.find((c) => c.toLowerCase() === typedClass.toLowerCase()) || typedClass) : classSelect.value;
+      const halaqahId = state.settings.halaqah.some((h) => h.id === document.getElementById("sf-halaqah").value) ? document.getElementById("sf-halaqah").value : "";
+      const parentName = clean("sf-parent");
+      const parentPhone = document.getElementById("sf-phone").value.replace(/[\s-]/g, "");
+
+      const errors = {
+        "sf-name": name.length >= 2 ? "" : "Sila isi nama pelajar.",
+        "sf-newclass": !isNewClass || typedClass ? "" : "Sila isi nama kelas baharu.",
+        "sf-phone": !parentPhone || PARENT_PHONE_RE.test(parentPhone) ? "" : "Nombor mesti digit sahaja, bermula 601 (cth 60123456789).",
+      };
+      Object.entries(errors).forEach(([id, msg]) => setError(id, msg));
+      const firstBad = Object.keys(errors).find((id) => errors[id]);
+      if (firstBad) { document.getElementById(firstBad).focus(); return; }
+
+      const dup = state.students.find((s) => s !== student && s.name.toLowerCase() === name.toLowerCase());
+      if (dup && !confirm(`Pelajar bernama "${dup.name}" sudah ada (${dup.className}${dup.status !== "aktif" ? ", Tidak Aktif" : ""}). Pastikan ini bukan pendua. Teruskan?`)) return;
+
+      if (student) {
+        const classChanged = student.className !== className;
+        Object.assign(student, { name, className, halaqahId, parentName, parentPhone });
+        persist();
+        showToast(classChanged ? `${name} dikemaskini. Kelas baharu terpakai untuk rekod baharu sahaja.` : `${name} dikemaskini.`);
+      } else {
+        state.students.push({
+          id: uid("s"), name, className, halaqahId, parentName, parentPhone,
+          status: "aktif", statusReason: "",
+          examRecords: [], attendanceLog: [], hafazanLog: [], fees: { ledger: [] },
+        });
+        persist();
+        showToast(`${name} ditambah ke ${className}.`);
+      }
+      closeModal();
+      renderDashboardStats();
+      renderSittingsCard();
+      renderStudentTable();
+      renderYuranPanel();
+      refreshKehadiranClasses();
+    });
+    document.getElementById("sf-name").focus();
+  }
 
   // ================================================================
   // KUNCI & TERBITKAN — per exam sitting. Draf: gurus can key in,
@@ -968,8 +1101,8 @@
   // see ambilClassStudents below). Rekod & Semakan needs every class
   // regardless of status, since a class that's since gone all-inactive
   // must still be reachable to review/correct its history.
-  const ambilClasses = getClassList(state);
-  const semakanClasses = getClassList(state, true);
+  let ambilClasses = getClassList(state);
+  let semakanClasses = getClassList(state, true);
 
   // ---- sub-tab switching ------------------------------------------
   const subtabsNav = document.getElementById("kehadiran-subtabs");
@@ -1010,12 +1143,18 @@
   const ambilCountMeta = document.getElementById("ambil-count-meta");
   const ambilDateBanner = document.getElementById("ambil-date-banner");
 
-  ambilClasses.forEach((c) => {
-    const opt = document.createElement("option");
-    opt.value = c;
-    opt.textContent = c;
-    ambilClassSelect.appendChild(opt);
-  });
+  function fillClassSelect(select, classes) {
+    const keep = select.value;
+    select.innerHTML = "";
+    classes.forEach((c) => {
+      const opt = document.createElement("option");
+      opt.value = c;
+      opt.textContent = c;
+      select.appendChild(opt);
+    });
+    if (classes.includes(keep)) select.value = keep;
+  }
+  fillClassSelect(ambilClassSelect, ambilClasses);
   ambilDateInput.value = todayIso();
   ambilDateInput.max = todayIso();
 
@@ -1221,12 +1360,26 @@
   const semakanBadge = document.getElementById("semakan-badge");
   const cellPopover = document.getElementById("cell-popover");
 
-  semakanClasses.forEach((c) => {
-    const opt = document.createElement("option");
-    opt.value = c;
-    opt.textContent = c;
-    semakanClassSelect.appendChild(opt);
-  });
+  fillClassSelect(semakanClassSelect, semakanClasses);
+
+  // After a student is added/edited (or another tab changed data) the
+  // class set can change, e.g. a "Kelas baharu". Keeps the current
+  // selection. An unsaved Ambil draft is kept; anyone new in that class
+  // is added to it as "hadir" so a save never writes an empty status.
+  function refreshKehadiranClasses() {
+    ambilClasses = getClassList(state);
+    semakanClasses = getClassList(state, true);
+    fillClassSelect(ambilClassSelect, ambilClasses);
+    fillClassSelect(semakanClassSelect, semakanClasses);
+    if (ambilClasses.length && !isAmbilDirty()) {
+      loadAndRenderAmbil(ambilClassSelect.value, ambilDateInput.value);
+    } else if (isAmbilDirty()) {
+      ambilClassStudents(ambilDraftClass).forEach((s) => { if (!ambilDraft[s.id]) ambilDraft[s.id] = "hadir"; });
+      renderAmbilList();
+    }
+    if (!document.getElementById("subpanel-semakan").hidden) renderRegisterGrid();
+    else renderSemakanBadge();
+  }
   // Defaults to the most recent month with any recorded data, not
   // "today"'s month — today's own month may not have a single record
   // yet this early into it, which would otherwise land an admin on a
@@ -2160,9 +2313,7 @@
     renderGuruPanel();
     renderSettings();
     renderSittingsCard();
-    if (!document.getElementById("subpanel-semakan").hidden) renderRegisterGrid();
-    else renderSemakanBadge();
-    if (!isAmbilDirty() && ambilClasses.length) loadAndRenderAmbil(ambilClassSelect.value, ambilDateInput.value);
+    refreshKehadiranClasses();
     showToast(hadModal ? "Data dikemaskini di tab lain — tetingkap ditutup, sila buka semula." : "Data dikemaskini di tab lain.");
   });
 

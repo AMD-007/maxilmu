@@ -1001,8 +1001,7 @@ function getCurrentExamRecord(student) {
   return getExamRecord(student, CURRENT_ACADEMIC_YEAR);
 }
 // Creates this year's record on first use rather than requiring every
-// student-creation path to remember to seed one (Tier 1 has no "add
-// student" UI yet, but this keeps the entry screens safe regardless).
+// student-creation path (seed, Tambah Pelajar) to remember to seed one.
 function ensureCurrentExamRecord(student) {
   let record = getCurrentExamRecord(student);
   if (!record) {
