@@ -6,6 +6,10 @@
    layout: header, tabs, tables, cards, forms, modal.
    ============================================================ */
 
+/* The hidden attribute always wins. Without this, any rule that sets
+   display (e.g. .field { display:flex }) silently un-hides the element. */
+[hidden] { display: none !important; }
+
 .portal-body {
   min-height: 100vh;
   display: flex;
