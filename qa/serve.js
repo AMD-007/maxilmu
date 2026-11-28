@@ -2,7 +2,7 @@
 // extensionless -> .html, missing -> 404.html (status 404).
 const http = require("http"), fs = require("fs"), path = require("path");
 const root = process.argv[2], port = +process.argv[3] || 8787;
-const types = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml" };
+const types = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".webp": "image/webp" };
 http.createServer((req, res) => {
   let p = decodeURIComponent(new URL(req.url, "http://x").pathname);
   if (p.endsWith("/")) p += "index.html";

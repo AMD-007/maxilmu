@@ -28,7 +28,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Amiri:ital,wght@0,400;0,700;1,400&family=Public+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="index.css">
-<link rel="preload" href="images/hero-exterior.jpg" as="image">
+<!-- Preload matches the <picture> WebP sources below (a JPG preload would double-download). -->
+<link rel="preload" as="image" type="image/webp" imagesrcset="images/hero-exterior-800.webp 800w, images/hero-exterior-1376.webp 1376w" imagesizes="100vw" fetchpriority="high">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
@@ -46,7 +47,10 @@
 
 <!-- ============ HERO — frontispiece photo + pasted label ============ -->
 <section class="hero" id="top">
-  <div class="hero__photo"><img src="images/hero-exterior.jpg" width="1376" height="768" alt="Anak-anak murid berjalan menuju bangunan pondok pada waktu pagi"></div>
+  <div class="hero__photo"><picture>
+    <source type="image/webp" srcset="images/hero-exterior-800.webp 800w, images/hero-exterior-1376.webp 1376w" sizes="100vw">
+    <img src="images/hero-exterior.jpg" width="1376" height="768" fetchpriority="high" alt="Anak-anak murid berjalan menuju bangunan pondok pada waktu pagi">
+  </picture></div>
   <div class="hero__label">
     <span class="hero__mark"><img src="logo-transparent.png" width="320" height="320" data-config-logo data-config-alt="name" alt="Lambang Maahad Cahaya Ilmu"></span>
     <p class="hero__arabic" lang="ar" dir="rtl" data-config="nameArabic">معهد نور العلم</p>
