@@ -1708,6 +1708,10 @@
     if (name.length < 3) { alert("Sila masukkan nama guru (sekurang-kurangnya 3 aksara)."); nameInput.focus(); return; }
     if (!/^[a-z0-9._]{3,20}$/.test(username)) { alert("Nama pengguna: 3-20 aksara, huruf kecil, nombor, titik atau garis bawah sahaja."); userInput.focus(); return; }
     if (state.settings.teachers.some((t) => t.username === username)) { alert("Nama pengguna ini sudah digunakan."); userInput.focus(); return; }
+    // Same display name is allowed (two real Ustaz Ahmads exist) but
+    // it is usually a double entry, so warn first.
+    const sameName = state.settings.teachers.find((t) => t.name.toLowerCase() === name.toLowerCase());
+    if (sameName && !confirm(`Guru bernama "${sameName.name}" sudah ada (@${sameName.username}, ${TEACHER_STATUSES[sameName.status].label}). Pastikan ini bukan pendua. Tambah juga?`)) { nameInput.focus(); return; }
     state.settings.teachers.push({ id: uid("g"), name, username, status: "aktif", statusReason: "", roles: ["guru"], assignments: [] });
     persist();
     nameInput.value = "";
