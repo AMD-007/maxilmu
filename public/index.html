@@ -208,9 +208,9 @@
       <a class="btn" data-wa-link href="https://wa.me/" target="_blank" rel="noopener">Hubungi melalui WhatsApp</a>
     </div>
     <form class="form" id="contact-form" novalidate>
-      <label>Nama<input type="text" name="name" required autocomplete="name"></label>
-      <label>Nombor Telefon / WhatsApp<input type="tel" name="phone" required autocomplete="tel"></label>
-      <label>Mesej<textarea name="message" rows="4" required placeholder="Contoh: Saya ingin tahu lebih lanjut tentang pendaftaran untuk sesi akan datang."></textarea></label>
+      <label>Nama<input type="text" name="name" required autocomplete="name" aria-describedby="err-name"><span class="form__error" id="err-name"></span></label>
+      <label>Nombor Telefon / WhatsApp<input type="tel" name="phone" required autocomplete="tel" aria-describedby="err-phone"><span class="form__error" id="err-phone"></span></label>
+      <label>Mesej<textarea name="message" rows="4" required placeholder="Contoh: Saya ingin tahu lebih lanjut tentang pendaftaran untuk sesi akan datang." aria-describedby="err-message"></textarea><span class="form__error" id="err-message"></span></label>
       <button class="btn" type="submit">Hantar melalui WhatsApp</button>
       <p class="form__note">Borang ini akan membuka WhatsApp dengan mesej anda — tiada maklumat disimpan di laman ini.</p>
     </form>

@@ -48,8 +48,22 @@ document.addEventListener("DOMContentLoaded", () => {
   // ── Contact form hands off to WhatsApp — no backend needed ──
   const form = document.getElementById("contact-form");
   if (form) {
+    const required = { name: "Sila isi nama anda.", phone: "Sila isi nombor telefon anda.", message: "Sila tulis mesej anda." };
+    const setError = (field, msg) => {
+      const el = form.elements[field];
+      el.setAttribute("aria-invalid", msg ? "true" : "false");
+      document.getElementById(`err-${field}`).textContent = msg;
+    };
+    Object.keys(required).forEach((field) => {
+      form.elements[field].addEventListener("input", () => {
+        if (form.elements[field].value.trim()) setError(field, "");
+      });
+    });
     form.addEventListener("submit", (e) => {
       e.preventDefault();
+      const empty = Object.keys(required).filter((field) => !form.elements[field].value.trim());
+      Object.keys(required).forEach((field) => setError(field, empty.includes(field) ? required[field] : ""));
+      if (empty.length) { form.elements[empty[0]].focus(); return; }
       const d = new FormData(form);
       const text = `Assalamualaikum, saya ${d.get("name")} (${d.get("phone")}).\n\n${d.get("message")}`;
       window.open(`https://wa.me/${SITE_CONFIG.whatsappNumber}?text=${encodeURIComponent(text)}`, "_blank", "noopener");

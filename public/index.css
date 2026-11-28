@@ -31,6 +31,7 @@
   --gold:#B8934A; --gold-ink:#755D2F; --gold-soft:#CBAE73;
   --parchment:#F6F0E4; --parchment-dim:#EEE4CE; --parchment-deep:#E7DABF;
   --ink:#2B2318; --ink-soft:#6B6152; --on-indigo:#EFE9D8;
+  --error:#9C3D26;
   --font-display:"Fraunces","Georgia",serif;
   --font-arabic:"Amiri",serif;
   --font-body:"Public Sans","Segoe UI",sans-serif;
@@ -246,6 +247,9 @@ address{font-style:normal;color:var(--ink-soft);margin:0 0 .6rem;line-height:1.5
 .form{display:flex;flex-direction:column;gap:1rem;background:var(--parchment-dim);padding:1.6rem;border:1px solid var(--parchment-deep);}
 .form label{display:flex;flex-direction:column;gap:.35rem;font-size:.85rem;font-weight:700;color:var(--ink);}
 .form input, .form textarea{font:inherit;padding:.6rem .7rem;border:1px solid var(--parchment-deep);background:var(--parchment);color:var(--ink);}
+.form input[aria-invalid="true"], .form textarea[aria-invalid="true"]{border-color:var(--error);background:#FBF1EE;}
+.form__error{font-size:.8rem;font-weight:700;color:var(--error);}
+.form__error:empty{display:none;}
 .form__note{font-size:.75rem;color:var(--ink-soft);margin:.2rem 0 0;}
 
 .footer{background:var(--ink);color:var(--on-indigo);text-align:center;padding:2.6rem 1.5rem 2rem;font-size:.85rem;}
