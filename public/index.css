@@ -240,11 +240,11 @@ address{font-style:normal;color:var(--ink-soft);margin:0 0 .6rem;line-height:1.5
 /* In-page links (#tentang, #hubungi…) land below the fixed mini header. */
 section[id]{scroll-margin-top:4.5rem;}
 
-/* Tablet (incl. 812px phone landscape and 1024 iPad): the pasted label
+/* Phones + tablets (<1100, incl. landscape and 1024 iPad): the pasted label
    sat over the walking students — the photo's subject. Here the photo
    gets its own band and the label is pasted across its torn bottom
    edge instead of on top of the children. Desktop (>=1100) unchanged. */
-@media (min-width:640px) and (max-width:1099px){
+@media (max-width:1099px){
   .hero{display:block;min-height:0;overflow:visible;}
   .hero__photo{position:relative;height:min(62vw,70vh);
     /* torn edge on the photo itself (same 18px zigzag as .torn) */
@@ -254,6 +254,13 @@ section[id]{scroll-margin-top:4.5rem;}
   .hero__scroll{display:none;}
   .torn{display:none;}
   .about{padding-top:3.5rem;}
+}
+/* Phones: label spans the width with the mobile gutters, overlapping
+   the photo edge less so the students stay clear. */
+@media (max-width:639px){
+  .hero__photo{height:68vw;}
+  .hero__label{margin:-1.5rem 1.25rem 0;}
+  .about{padding-top:3rem;}
 }
 
 /* Mobile ledger: 3 stat tiles become ruled ledger rows (label left,
