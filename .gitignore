@@ -18,3 +18,6 @@ logoMDA.png
 
 # Wrangler local dev state
 .wrangler/
+
+# Responsive QA screenshots (local only)
+qa-screens/
