@@ -964,3 +964,10 @@ thead .register-name { background: var(--parchment-dim); z-index: 3; }
 }
 .sittings-row__info { display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem 0.6rem; font-size: 0.88rem; }
 .sittings-row .btn { min-height: 40px; }
+
+/* Guru page is used on phones: full student names (two "Muhammad …"
+   must never be confused) and 44px tap targets throughout. Scoped to
+   guru.html so the admin layout is unchanged. */
+.portal-body--guru .attendance-row__name { white-space: normal; overflow-wrap: anywhere; }
+.portal-body--guru .status-segmented__btn { min-width: 2.75rem; min-height: 44px; }
+.portal-body--guru .btn--small { min-height: 44px; }
