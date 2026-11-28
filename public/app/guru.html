@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Paparan Guru — Maahad Cahaya Ilmu</title>
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Public+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="app.css">
+<script src="../site-config.js"></script>
+<script>document.title = `Paparan Guru — ${SITE_CONFIG.name}`;</script>
+</head>
+<body class="portal-body">
+
+<!-- Guru view: a separate page (not admin.html with role checks) so
+     nothing admin-only — Yuran, Tetapan, parent names/phones, student
+     registration, other classes — is ever rendered here to begin with.
+     Shares data.js with admin/parent; every write goes through the same
+     helpers there (setAttendanceForDate / setExamMark / addHafazanEntry)
+     and is re-checked against freshly loaded state right before saving. -->
+<header class="portal-header">
+  <div class="portal-header__brand">
+    <span class="mark-crop portal-header__mark"><img src="../logo-transparent.png" data-config-logo data-config-alt="name" alt="Lambang Maahad Cahaya Ilmu"></span>
+    <div>
+      <strong data-config="name">Maahad Cahaya Ilmu</strong>
+      <span class="portal-header__sub" id="guru-header-sub">Paparan Guru</span>
+    </div>
+  </div>
+  <div class="portal-header__actions">
+    <span class="portal-header__credit">Dikuasakan oleh MaxIlmu</span>
+    <button class="btn btn--ghost btn--small" id="btn-logout" type="button">Log Keluar</button>
+  </div>
+</header>
+
+<nav class="portal-tabs" id="portal-tabs" aria-label="Tugasan guru"></nav>
+
+<main class="portal-main container" id="guru-main">
+  <section class="card parent-summary">
+    <h1 id="guru-name"></h1>
+    <p id="guru-tasks-meta"></p>
+  </section>
+
+  <section class="card" id="guru-no-tasks" hidden>
+    <h2>Tiada tugasan lagi</h2>
+    <p class="card__hint">Admin belum menugaskan kelas, subjek atau halaqah kepada anda. Sila hubungi admin madrasah.</p>
+  </section>
+
+  <!-- ---- Kehadiran: assigned classes only ---- -->
+  <section class="portal-panel has-savebar" data-panel="kehadiran" hidden>
+    <div class="panel-head">
+      <h2 class="guru-panel-title">Ambil Kehadiran</h2>
+      <span class="panel-head__meta" id="att-count-meta"></span>
+    </div>
+    <p class="date-warning-banner" id="att-date-banner" hidden></p>
+    <div class="inline-form attendance-controls">
+      <div class="field">
+        <label for="att-class-select">Kelas</label>
+        <select id="att-class-select"></select>
+      </div>
+      <div class="field">
+        <label for="att-date-input">Tarikh</label>
+        <input type="date" id="att-date-input">
+      </div>
+      <button class="btn btn--secondary btn--small" id="btn-att-all-present" type="button">Tandakan Semua Hadir</button>
+    </div>
+    <div class="attendance-list" id="att-list"></div>
+    <p class="empty-note" id="att-empty" hidden>Tiada pelajar aktif dalam kelas ini.</p>
+    <div class="attendance-legend">
+      <span><span class="att-chip att-chip--inline att-chip--hadir" aria-hidden="true">H</span> Hadir</span>
+      <span><span class="att-chip att-chip--inline att-chip--tidak-hadir" aria-hidden="true">T</span> Tidak Hadir</span>
+      <span><span class="att-chip att-chip--inline att-chip--lewat" aria-hidden="true">L</span> Lewat</span>
+    </div>
+  </section>
+
+  <!-- ---- Markah: assigned class + subject only ---- -->
+  <section class="portal-panel has-savebar" data-panel="markah" hidden>
+    <div class="panel-head">
+      <h2 class="guru-panel-title">Markah Peperiksaan</h2>
+      <span class="panel-head__meta" id="mark-count-meta"></span>
+    </div>
+    <div class="inline-form attendance-controls">
+      <div class="field">
+        <label for="mark-subject-select">Kelas &amp; Subjek</label>
+        <select id="mark-subject-select"></select>
+      </div>
+      <div class="field">
+        <label for="mark-sitting-select">Peperiksaan</label>
+        <select id="mark-sitting-select"></select>
+      </div>
+    </div>
+    <p class="guru-lock-note" id="mark-lock-note" hidden></p>
+    <div class="attendance-list" id="mark-list"></div>
+    <p class="empty-note" id="mark-empty" hidden>Tiada pelajar aktif dalam kelas ini.</p>
+  </section>
+
+  <!-- ---- Hafazan / Tasmik: assigned halaqah only ---- -->
+  <section class="portal-panel" data-panel="hafazan" hidden>
+    <div class="panel-head">
+      <h2 class="guru-panel-title">Hafazan &amp; Tasmik</h2>
+      <span class="panel-head__meta" id="haf-count-meta"></span>
+    </div>
+    <div class="inline-form attendance-controls">
+      <div class="field">
+        <label for="haf-halaqah-select">Halaqah</label>
+        <select id="haf-halaqah-select"></select>
+      </div>
+    </div>
+    <p class="card__hint">Tekan nama pelajar untuk rekod tasmik.</p>
+    <div class="attendance-list" id="haf-list"></div>
+    <p class="empty-note" id="haf-empty" hidden>Tiada pelajar aktif dalam halaqah ini.</p>
+  </section>
+</main>
+
+<div class="attendance-savebar" id="guru-savebar" hidden>
+  <button class="btn" id="btn-guru-save" type="button">Simpan</button>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  let state = loadState();
+  let guru = requireActiveGuru(state);
+  if (!guru) return;
+
+  const PANELS = {
+    kehadiran: { label: "Kehadiran", show: () => guruClasses(guru).length > 0 },
+    markah: { label: "Markah", show: () => guruClasses(guru).length > 0 },
+    hafazan: { label: "Hafazan", show: () => guruHalaqahIds(guru).length > 0 },
+  };
+  let activePanel = null;
+
+  // ── helpers ────────────────────────────────────────────────────
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+  let toastTimer = null;
+  const toastEl = document.getElementById("toast");
+  function showToast(message) {
+    toastEl.textContent = message;
+    toastEl.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toastEl.hidden = true; }, 3200);
+  }
+  function fillSelect(select, options, keepValue) {
+    select.innerHTML = "";
+    options.forEach(({ value, label }) => {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = label;
+      select.appendChild(opt);
+    });
+    if (keepValue && options.some((o) => o.value === keepValue)) select.value = keepValue;
+  }
+  function activeStudentsWhere(pred) {
+    return state.students.filter((s) => s.status === "aktif" && pred(s)).sort((a, b) => a.name.localeCompare(b.name));
+  }
+  // Every save: reload state (another tab — e.g. the admin — may have
+  // changed it since this page loaded), re-check the guru is still
+  // active, then run the write against that fresh state.
+  function freshGuardedWrite(fn) {
+    state = loadState();
+    const g = requireActiveGuru(state);
+    if (!g) return false;
+    guru = g;
+    return fn();
+  }
+
+  document.getElementById("btn-logout").addEventListener("click", () => {
+    if (isDirty() && !confirm("Ada perubahan belum disimpan. Log keluar tanpa menyimpan?")) return;
+    clearSession();
+    window.location.href = "login.html";
+  });
+
+  // ── dirty tracking (attendance draft / typed marks) ───────────
+  let attDirty = false;
+  let markDirty = false;
+  function isDirty() { return attDirty || markDirty; }
+  function confirmDiscard() {
+    if (!isDirty()) return true;
+    if (!confirm("Ada perubahan belum disimpan. Teruskan tanpa menyimpan?")) return false;
+    attDirty = false;
+    markDirty = false;
+    return true;
+  }
+
+  // ── header, tabs, panels ──────────────────────────────────────
+  const tabsNav = document.getElementById("portal-tabs");
+  const savebar = document.getElementById("guru-savebar");
+  const saveBtn = document.getElementById("btn-guru-save");
+
+  function renderShell() {
+    document.getElementById("guru-header-sub").textContent = `Paparan Guru · ${guru.name}`;
+    document.getElementById("guru-name").textContent = `Assalamualaikum, ${guru.name}`;
+    document.getElementById("guru-tasks-meta").textContent = guru.assignments.length
+      ? "Tugasan: " + guru.assignments.map((a) => assignmentLabel(state, a)).join(" · ")
+      : "";
+    const visible = Object.keys(PANELS).filter((k) => PANELS[k].show());
+    document.getElementById("guru-no-tasks").hidden = visible.length > 0;
+    tabsNav.hidden = visible.length === 0;
+    tabsNav.innerHTML = visible.map((k) => `<button class="portal-tabs__btn" data-tab="${k}" type="button">${PANELS[k].label}</button>`).join("");
+    if (!visible.includes(activePanel)) activePanel = visible[0] || null;
+    showPanel(activePanel);
+  }
+
+  function showPanel(name) {
+    activePanel = name;
+    tabsNav.querySelectorAll(".portal-tabs__btn").forEach((b) => {
+      b.classList.toggle("is-active", b.dataset.tab === name);
+      b.setAttribute("aria-pressed", b.dataset.tab === name);
+    });
+    document.querySelectorAll(".portal-panel").forEach((p) => { p.hidden = p.dataset.panel !== name; });
+    if (name === "kehadiran") renderAttendance();
+    else if (name === "markah") renderMarks();
+    else if (name === "hafazan") renderHafazan();
+    updateSavebar();
+  }
+
+  function updateSavebar() {
+    if (activePanel === "kehadiran") {
+      savebar.hidden = !attStudents().length;
+      saveBtn.textContent = "Simpan Kehadiran";
+    } else if (activePanel === "markah") {
+      savebar.hidden = !markStudents().length || isSittingPublished(state, CURRENT_ACADEMIC_YEAR, markSittingSelect.value);
+      saveBtn.textContent = "Simpan Markah";
+    } else {
+      savebar.hidden = true;
+    }
+  }
+
+  tabsNav.addEventListener("click", (e) => {
+    const btn = e.target.closest(".portal-tabs__btn");
+    if (!btn || btn.dataset.tab === activePanel) return;
+    if (!confirmDiscard()) return;
+    showPanel(btn.dataset.tab);
+  });
+
+  saveBtn.addEventListener("click", () => {
+    if (activePanel === "kehadiran") saveAttendance();
+    else if (activePanel === "markah") saveMarks();
+  });
+
+  // ================================================================
+  // KEHADIRAN
+  // ================================================================
+  const AMBIL_STATUSES = ["hadir", "tidak-hadir", "lewat"];
+  const attClassSelect = document.getElementById("att-class-select");
+  const attDateInput = document.getElementById("att-date-input");
+  const attList = document.getElementById("att-list");
+  let attDraft = {};
+
+  attDateInput.value = todayIso();
+
+  function attStudents() {
+    const cls = attClassSelect.value;
+    if (!guruCanTakeAttendance(guru, cls)) return [];
+    return activeStudentsWhere((s) => s.className === cls);
+  }
+
+  function loadAttDraft() {
+    attDraft = {};
+    attStudents().forEach((s) => {
+      const existing = getAttendanceForDate(s, attDateInput.value);
+      attDraft[s.id] = existing ? existing.status : "hadir";
+    });
+    attDirty = false;
+  }
+
+  function renderAttendance(keepDraft) {
+    fillSelect(attClassSelect, guruClasses(guru).map((c) => ({ value: c, label: c })), attClassSelect.value);
+    attDateInput.max = todayIso();
+    if (!keepDraft) loadAttDraft();
+    const students = attStudents();
+    document.getElementById("att-empty").hidden = students.length > 0;
+
+    const banner = document.getElementById("att-date-banner");
+    const today = todayIso();
+    banner.hidden = attDateInput.value === today;
+    banner.textContent = banner.hidden ? "" : `Anda menanda kehadiran untuk ${formatDate(attDateInput.value)}, bukan hari ini (${formatDate(today)}).`;
+
+    attList.innerHTML = students.map((s) => {
+      const status = attDraft[s.id];
+      const segments = AMBIL_STATUSES.map((st) => `
+        <button type="button" class="status-segmented__btn status-segmented__btn--${st} ${st === status ? "is-active" : ""}"
+          data-student="${s.id}" data-status="${st}" aria-pressed="${st === status}"
+          aria-label="${escapeHtml(ATTENDANCE_STATUSES[st].label)}">${ATTENDANCE_STATUSES[st].letter}</button>`).join("");
+      const badge = status === "bersurat" ? '<span class="pill pill--bersurat" title="Diselesaikan sebagai Bersurat oleh admin">Bersurat</span>' : "";
+      return `
+        <div class="attendance-row">
+          <span class="attendance-row__name">${escapeHtml(s.name)}</span>
+          <div class="attendance-row__status">${badge}<div class="status-segmented" role="group" aria-label="Status kehadiran ${escapeHtml(s.name)}">${segments}</div></div>
+        </div>`;
+    }).join("");
+
+    attList.querySelectorAll("[data-student]").forEach((btn) => btn.addEventListener("click", () => {
+      const id = btn.dataset.student;
+      if (attDraft[id] === btn.dataset.status) return;
+      if (attDraft[id] === "bersurat" && !confirm("Hari ini telah diselesaikan sebagai Bersurat oleh admin. Menukar status akan membatalkannya. Teruskan?")) return;
+      attDraft[id] = btn.dataset.status;
+      attDirty = true;
+      renderAttendance(true);
+    }));
+
+    const hadir = students.filter((s) => attDraft[s.id] === "hadir" || attDraft[s.id] === "lewat").length;
+    document.getElementById("att-count-meta").textContent = students.length ? `${hadir}/${students.length} Hadir` : "";
+    updateSavebar();
+  }
+
+  let attLastClass = null;
+  let attLastDate = attDateInput.value;
+  attClassSelect.addEventListener("focus", () => { attLastClass = attClassSelect.value; });
+  attClassSelect.addEventListener("change", () => {
+    if (!confirmDiscard()) { attClassSelect.value = attLastClass; return; }
+    attLastClass = attClassSelect.value;
+    renderAttendance();
+  });
+  attDateInput.addEventListener("change", () => {
+    // No future days: a guru marks today or catches up on a past day.
+    if (!attDateInput.value || attDateInput.value > todayIso() || !confirmDiscard()) { attDateInput.value = attLastDate; return; }
+    attLastDate = attDateInput.value;
+    renderAttendance();
+  });
+  document.getElementById("btn-att-all-present").addEventListener("click", () => {
+    attStudents().forEach((s) => { if (attDraft[s.id] !== "bersurat") attDraft[s.id] = "hadir"; });
+    attDirty = true;
+    renderAttendance(true);
+  });
+
+  function saveAttendance() {
+    const cls = attClassSelect.value;
+    const date = attDateInput.value;
+    const draft = attDraft;
+    const saved = freshGuardedWrite(() => {
+      if (!guruCanTakeAttendance(guru, cls)) { alert("Anda tidak lagi ditugaskan ke kelas ini."); return false; }
+      attStudents().forEach((s) => {
+        const status = draft[s.id];
+        if (!status || status === "bersurat") return; // never overwrite an admin's Bersurat
+        setAttendanceForDate(s, date, status, null, guru.id);
+      });
+      saveState(state);
+      return true;
+    });
+    if (!saved) return;
+    attDirty = false;
+    renderShell();
+    showToast(`Kehadiran ${cls} · ${formatDate(date)} disimpan.`);
+  }
+
+  // ================================================================
+  // MARKAH
+  // ================================================================
+  const markSubjectSelect = document.getElementById("mark-subject-select");
+  const markSittingSelect = document.getElementById("mark-sitting-select");
+  const markList = document.getElementById("mark-list");
+
+  // "classId|subject" — both come from the guru's own assignments only.
+  function currentClassSubject() {
+    const [cls, ...rest] = markSubjectSelect.value.split("|");
+    return { cls, subject: rest.join("|") };
+  }
+  function markStudents() {
+    const { cls, subject } = currentClassSubject();
+    if (!guruSubjectsFor(guru, cls).includes(subject)) return [];
+    return activeStudentsWhere((s) => s.className === cls);
+  }
+
+  function renderMarks() {
+    const pairs = guru.assignments.filter((a) => a.type === "kelas")
+      .map((a) => ({ value: `${a.classId}|${a.subject}`, label: `${a.classId} · ${a.subject}` }));
+    fillSelect(markSubjectSelect, pairs, markSubjectSelect.value);
+
+    // Default to the first still-draft sitting — that's the one a guru
+    // is actually keying in. Published ones stay viewable, read-only.
+    const prevSitting = markSittingSelect.value;
+    fillSelect(markSittingSelect, EXAM_PERIODS.map((e) => ({
+      value: e.key,
+      label: isSittingPublished(state, CURRENT_ACADEMIC_YEAR, e.key) ? `${e.label} — Diterbitkan` : `${e.label} — Draf`,
+    })), prevSitting);
+    if (!prevSitting) {
+      const firstDraft = EXAM_PERIODS.find((e) => !isSittingPublished(state, CURRENT_ACADEMIC_YEAR, e.key));
+      if (firstDraft) markSittingSelect.value = firstDraft.key;
+    }
+
+    const examKey = markSittingSelect.value;
+    const locked = isSittingPublished(state, CURRENT_ACADEMIC_YEAR, examKey);
+    const { subject } = currentClassSubject();
+    const students = markStudents();
+    document.getElementById("mark-empty").hidden = students.length > 0;
+    const lockNote = document.getElementById("mark-lock-note");
+    lockNote.hidden = !locked;
+    lockNote.textContent = locked ? "Peperiksaan ini telah dikunci & diterbitkan oleh admin — markah dipaparkan untuk rujukan sahaja." : "";
+
+    let filled = 0;
+    markList.innerHTML = students.map((s) => {
+      const record = getCurrentExamRecord(s);
+      const has = record && Object.prototype.hasOwnProperty.call(record.marks[examKey], subject);
+      const val = has ? record.marks[examKey][subject] : "";
+      if (has) filled++;
+      const inputId = `mark_${s.id}`;
+      return `
+        <div class="attendance-row">
+          <label class="attendance-row__name" for="${inputId}">${escapeHtml(s.name)}</label>
+          ${locked
+            ? `<span class="mark-readonly" id="${inputId}">${has ? val : '<span class="cell-muted">—</span>'}</span>`
+            : `<input class="mark-row-input" type="number" inputmode="numeric" min="0" max="100" step="1" id="${inputId}" data-mark-student="${s.id}" value="${val}" aria-label="Markah ${escapeHtml(s.name)}">`}
+        </div>`;
+    }).join("");
+    markList.querySelectorAll("[data-mark-student]").forEach((input) => input.addEventListener("input", () => { markDirty = true; }));
+    document.getElementById("mark-count-meta").textContent = students.length ? `${filled}/${students.length} markah` : "";
+    markDirty = false;
+    updateSavebar();
+  }
+
+  let markLastSubject = null;
+  let markLastSitting = null;
+  markSubjectSelect.addEventListener("focus", () => { markLastSubject = markSubjectSelect.value; });
+  markSittingSelect.addEventListener("focus", () => { markLastSitting = markSittingSelect.value; });
+  markSubjectSelect.addEventListener("change", () => {
+    if (!confirmDiscard()) { markSubjectSelect.value = markLastSubject; return; }
+    renderMarks();
+  });
+  markSittingSelect.addEventListener("change", () => {
+    if (!confirmDiscard()) { markSittingSelect.value = markLastSitting; return; }
+    renderMarks();
+  });
+
+  function saveMarks() {
+    const { cls, subject } = currentClassSubject();
+    const examKey = markSittingSelect.value;
+    const inputs = Array.from(markList.querySelectorAll("[data-mark-student]"));
+    const bad = inputs.find((i) => !i.validity.valid);
+    if (bad) { alert("Markah mesti nombor bulat 0 hingga 100."); bad.focus(); return; }
+    const values = inputs.map((i) => ({ id: i.dataset.markStudent, value: i.value === "" ? null : Number(i.value) }));
+    const saved = freshGuardedWrite(() => {
+      if (isSittingPublished(state, CURRENT_ACADEMIC_YEAR, examKey)) { alert("Peperiksaan ini baru sahaja dikunci & diterbitkan oleh admin. Markah tidak boleh diubah lagi."); return false; }
+      let blocked = 0;
+      values.forEach(({ id, value }) => {
+        const s = getStudent(state, id);
+        if (!s || s.className !== cls || !guruCanEnterMark(state, guru, s, examKey, subject)) { blocked++; return; }
+        setExamMark(state, s, examKey, subject, value, guru.id);
+      });
+      saveState(state);
+      if (blocked) alert(`${blocked} markah tidak disimpan kerana tugasan anda telah berubah.`);
+      return true;
+    });
+    markDirty = false;
+    renderShell();
+    if (saved) showToast(`Markah ${subject} (${cls}) disimpan.`);
+  }
+
+  // ================================================================
+  // HAFAZAN / TASMIK
+  // ================================================================
+  const hafHalaqahSelect = document.getElementById("haf-halaqah-select");
+  const hafList = document.getElementById("haf-list");
+
+  function renderHafazan(openStudentId) {
+    fillSelect(hafHalaqahSelect, guruHalaqahIds(guru).map((id) => {
+      const h = getHalaqah(state, id);
+      return { value: id, label: h ? h.name : id };
+    }), hafHalaqahSelect.value);
+    const hid = hafHalaqahSelect.value;
+    const students = guruHalaqahIds(guru).includes(hid) ? activeStudentsWhere((s) => s.halaqahId === hid) : [];
+    document.getElementById("haf-empty").hidden = students.length > 0;
+    document.getElementById("haf-count-meta").textContent = students.length ? `${students.length} pelajar` : "";
+    const hafazan = state.settings.hafazan;
+    const unit = hafazanUnitLabel(hafazan.unit, 2);
+
+    hafList.innerHTML = students.map((s) => {
+      const total = getHafazanTotal(s);
+      const pct = Math.min(100, Math.round((total / hafazan.total) * 100));
+      const recent = sortedHafazanLog(s, "desc").slice(0, 3);
+      return `
+        <details class="tasmik-card" data-haf-student="${s.id}" ${s.id === openStudentId ? "open" : ""}>
+          <summary>
+            <span class="tasmik-card__name">${escapeHtml(s.name)}</span>
+            <span class="tasmik-card__meta">${escapeHtml(s.className)} · ${total} / ${hafazan.total} ${escapeHtml(unit)}</span>
+            <span class="progress-bar" aria-hidden="true"><span class="progress-bar__fill" style="display:block; width:${pct}%"></span></span>
+          </summary>
+          <div class="tasmik-card__body">
+            ${recent.length ? `<ul class="tasmik-recent">${recent.map((e) => {
+              const by = enteredByName(state, e.enteredBy);
+              return `<li><strong>${formatDateShort(e.date)}</strong> +${e.amount} ${escapeHtml(hafazanUnitLabel(hafazan.unit, e.amount))}${e.note ? ` · ${escapeHtml(e.note)}` : ""}${by ? `<span class="entered-by">Direkod oleh ${escapeHtml(by)}</span>` : ""}</li>`;
+            }).join("")}</ul>` : '<p class="empty-note">Belum ada rekod hafazan.</p>'}
+            <form class="tasmik-form" data-tasmik-form="${s.id}" novalidate>
+              <div class="field">
+                <label for="tasmik-date-${s.id}">Tarikh</label>
+                <input type="date" id="tasmik-date-${s.id}" name="date" value="${todayIso()}" max="${todayIso()}" required>
+              </div>
+              <div class="field">
+                <label for="tasmik-amount-${s.id}">Tambahan (${escapeHtml(unit)})</label>
+                <input type="number" id="tasmik-amount-${s.id}" name="amount" inputmode="decimal" min="0.25" max="114" step="0.25" value="0.5" required>
+              </div>
+              <div class="field tasmik-form__note">
+                <label for="tasmik-note-${s.id}">Catatan (pilihan)</label>
+                <input type="text" id="tasmik-note-${s.id}" name="note" maxlength="120" placeholder="Cth: Juz 6, m/s 1-10">
+              </div>
+              <button class="btn btn--small" type="submit">Simpan Tasmik</button>
+            </form>
+          </div>
+        </details>`;
+    }).join("");
+
+    hafList.querySelectorAll("[data-tasmik-form]").forEach((form) => form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const studentId = form.dataset.tasmikForm;
+      const date = form.elements.date.value;
+      const amount = form.elements.amount.value;
+      const note = form.elements.note.value;
+      if (!form.elements.date.validity.valid || !form.elements.amount.validity.valid || date > todayIso()) {
+        alert("Sila isi tarikh (bukan masa depan) dan jumlah tambahan yang sah.");
+        return;
+      }
+      const saved = freshGuardedWrite(() => {
+        const s = getStudent(state, studentId);
+        if (!s || !guruCanRecordHafazan(guru, s)) { alert("Pelajar ini tidak lagi dalam halaqah anda."); return false; }
+        if (!addHafazanEntry(s, { date, amount, note }, guru.id)) { alert("Sila isi tarikh dan jumlah tambahan yang sah."); return false; }
+        saveState(state);
+        return true;
+      });
+      if (!saved) { renderShell(); return; }
+      renderShell();
+      renderHafazan(studentId);
+      showToast("Rekod tasmik disimpan.");
+    }));
+  }
+
+  hafHalaqahSelect.addEventListener("change", () => renderHafazan());
+
+  // ── Cross-tab changes (admin deactivates / reassigns / publishes) ──
+  window.addEventListener("storage", (e) => {
+    if (e.key !== STORAGE_KEY && e.key !== null) return;
+    state = loadState();
+    const g = requireActiveGuru(state);
+    if (!g) return;
+    guru = g;
+    if (isDirty()) { showToast("Data dikemaskini di tab lain. Simpan atau batal perubahan anda untuk melihatnya."); return; }
+    renderShell();
+  });
+
+  renderShell();
+})();
+</script>
+</body>
+</html>

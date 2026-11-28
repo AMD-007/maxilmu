@@ -2027,6 +2027,34 @@
     showToast("Tetapan kehadiran disimpan.");
   });
 
+  // ── Cross-tab sync ──────────────────────────────────────────────
+  // A guru tab (or a second admin tab) writes the same localStorage
+  // blob. Without this, this tab's in-memory `state` would go stale and
+  // its next persist() would silently overwrite the guru's entries.
+  // An open modal holds references into the old state, so it's closed
+  // (its unsaved input is lost — the toast says so). An Ambil Kehadiran
+  // draft is keyed by student id and applied to `state` at save time,
+  // so it survives the reload; only its list isn't re-rendered.
+  // shortcut: last-writer-wins on the whole blob; the Firebase version
+  // writes per-document and gets this for free.
+  window.addEventListener("storage", (e) => {
+    if (e.key !== STORAGE_KEY && e.key !== null) return;
+    const hadModal = !modalOverlay.hidden;
+    if (hadModal) closeModal();
+    closeCellPopover();
+    state = loadState();
+    renderDashboardStats();
+    renderStudentTable();
+    renderYuranPanel();
+    renderGuruPanel();
+    renderSettings();
+    if (typeof renderSittingsCard === "function") renderSittingsCard();
+    if (!document.getElementById("subpanel-semakan").hidden) renderRegisterGrid();
+    else renderSemakanBadge();
+    if (!isAmbilDirty() && ambilClasses.length) loadAndRenderAmbil(ambilClassSelect.value, ambilDateInput.value);
+    showToast(hadModal ? "Data dikemaskini di tab lain — tetingkap ditutup, sila buka semula." : "Data dikemaskini di tab lain.");
+  });
+
   // ── Initial render ──────────────────────────────────────────────
   renderDashboardStats();
   renderStudentTable();
