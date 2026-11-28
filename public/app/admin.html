@@ -657,7 +657,7 @@
       const safeId = subj.replace(/[^a-z0-9]/gi, "_");
       const cells = EXAM_PERIODS.map((exam) => {
         const val = Object.prototype.hasOwnProperty.call(record.marks[exam.key], subj) ? record.marks[exam.key][subj] : "";
-        return `<td><input type="number" min="0" max="100" class="mark-cell-input" id="mark_${exam.key}_${safeId}" data-exam="${exam.key}" data-subject="${escapeHtml(subj)}" value="${val}"></td>`;
+        return `<td data-col="${exam.key}"><input type="number" min="0" max="100" class="mark-cell-input" id="mark_${exam.key}_${safeId}" data-exam="${exam.key}" data-subject="${escapeHtml(subj)}" value="${val}"></td>`;
       }).join("");
       return `
         <tr>
@@ -675,12 +675,18 @@
       <p class="card__hint">${escapeHtml(student.className)} · Ibu bapa: ${escapeHtml(student.parentName)}</p>
       <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Keputusan Peperiksaan</h3>
       ${subjects.length ? `
+        <!-- Phones only (<640, see .results-switch in app.css): one sitting's
+             column at a time. All inputs stay in the DOM, so Simpan still
+             saves every sitting. -->
+        <div class="status-segmented results-switch" role="group" aria-label="Pilih peperiksaan">
+          ${EXAM_PERIODS.map((exam) => `<button type="button" class="status-segmented__btn" data-show-sitting="${exam.key}" aria-pressed="false">${exam.short}</button>`).join("")}
+        </div>
         <div class="table-wrap" style="margin-bottom:1rem;">
-          <table class="data-table">
+          <table class="data-table results-table" id="results-table">
             <thead>
               <tr>
                 <th>Subjek</th>
-                ${EXAM_PERIODS.map((exam) => `<th>${exam.label}</th>`).join("")}
+                ${EXAM_PERIODS.map((exam) => `<th data-col="${exam.key}">${exam.label}</th>`).join("")}
                 <th>Purata</th>
               </tr>
             </thead>
@@ -703,6 +709,23 @@
       const cell = document.getElementById(`avg_${safeId}`);
       cell.textContent = values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) + "%" : "—";
     }
+    // Mobile sitting switcher — default to the latest draft (unpublished)
+    // sitting = the first unpublished one (all published -> Akhir), i.e. the
+    // sitting the admin is entering now.
+    const resultsTable = document.getElementById("results-table");
+    function showSitting(key) {
+      if (!resultsTable) return;
+      resultsTable.dataset.show = key;
+      modalRoot.querySelectorAll("[data-show-sitting]").forEach((b) => {
+        const on = b.dataset.showSitting === key;
+        b.classList.toggle("is-active", on);
+        b.setAttribute("aria-pressed", String(on));
+      });
+    }
+    const drafts = EXAM_PERIODS.filter((exam) => !isSittingPublished(state, CURRENT_ACADEMIC_YEAR, exam.key));
+    showSitting((drafts[0] || EXAM_PERIODS[EXAM_PERIODS.length - 1]).key);
+    modalRoot.querySelectorAll("[data-show-sitting]").forEach((b) => b.addEventListener("click", () => showSitting(b.dataset.showSitting)));
+
     modalRoot.querySelectorAll("input[data-subject]").forEach((input) => {
       recomputeRowAverage(input.dataset.subject);
       input.addEventListener("input", () => recomputeRowAverage(input.dataset.subject));

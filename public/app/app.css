@@ -1037,3 +1037,17 @@ thead .register-name { background: var(--parchment-dim); z-index: 3; }
   .tasmik-card summary { grid-template-columns: 1fr; }
   .tasmik-card__meta { white-space: normal; }
 }
+
+/* Admin Keputusan modal: phones get a sitting switcher and see one
+   sitting column at a time (only Awal fitted before, the rest cut off
+   with no hint). Desktop/tablet keep the full 3-column grid. */
+.results-switch { display: none; }
+@media (max-width: 639px) {
+  .results-switch { display: flex; margin-bottom: 0.75rem; }
+  .results-switch .status-segmented__btn { flex: 1; font-family: var(--font-body); font-size: 0.86rem; }
+  .results-switch .status-segmented__btn.is-active { background: var(--teal); }
+  .results-table th, .results-table td { padding: 0.6rem 0.55rem; white-space: normal; }
+  .results-table[data-show="awal"] [data-col]:not([data-col="awal"]),
+  .results-table[data-show="pertengahan"] [data-col]:not([data-col="pertengahan"]),
+  .results-table[data-show="akhir"] [data-col]:not([data-col="akhir"]) { display: none; }
+}
