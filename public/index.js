@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
     addressEl.innerHTML = `${SITE_CONFIG.name}<br>${addr.line2}<br>${addr.line3}`;
     const mapQuery = encodeURIComponent(addr.mapQuery);
     document.getElementById("contact-map-link").href = `https://www.google.com/maps?q=${mapQuery}`;
+    document.getElementById("contact-map-fallback").href = `https://www.google.com/maps?q=${mapQuery}`;
     const mapFrame = document.getElementById("contact-map-frame");
     mapFrame.src = `https://www.google.com/maps?q=${mapQuery}&z=12&output=embed`;
     mapFrame.title = `Peta kawasan ${addr.mapQuery} (ilustrasi, bukan lokasi sebenar)`;

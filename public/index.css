@@ -233,3 +233,61 @@ address{font-style:normal;color:var(--ink-soft);margin:0 0 .6rem;line-height:1.5
 .footer__ar{font-family:var(--font-arabic);color:var(--gold-soft);margin:0 0 .3rem;}
 .footer p{margin:.15rem 0;color:#B9B6C9;}
 .footer__credit{color:var(--gold-soft) !important;font-size:.75rem;letter-spacing:.03em;margin-top:.6rem !important;}
+
+/* =================================================================
+   RESPONSIVE FIXES (2026-11 audit) — layout only, same design language.
+================================================================= */
+/* In-page links (#tentang, #hubungi…) land below the fixed mini header. */
+section[id]{scroll-margin-top:4.5rem;}
+
+/* Tablet (incl. 812px phone landscape and 1024 iPad): the pasted label
+   sat over the walking students — the photo's subject. Here the photo
+   gets its own band and the label is pasted across its torn bottom
+   edge instead of on top of the children. Desktop (>=1100) unchanged. */
+@media (min-width:640px) and (max-width:1099px){
+  .hero{display:block;min-height:0;overflow:visible;}
+  .hero__photo{position:relative;height:min(62vw,70vh);
+    /* torn edge on the photo itself (same 18px zigzag as .torn) */
+    -webkit-mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50% 100%/18px 100%;
+    mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50% 100%/18px 100%;}
+  .hero__label{margin:-4.5rem 0 0 3.2rem;}
+  .hero__scroll{display:none;}
+  .torn{display:none;}
+  .about{padding-top:3.5rem;}
+}
+
+/* Mobile ledger: 3 stat tiles become ruled ledger rows (label left,
+   figure right) instead of three cramped columns; exam row is a fixed
+   3-column grid so "Akhir Tahun" can never wrap onto its own line. */
+.report__exams{display:grid;grid-template-columns:repeat(3,max-content);gap:.4rem clamp(.9rem,4vw,1.4rem);}
+@media (max-width:480px){
+  .stat-grid{grid-template-columns:1fr;gap:0;background:none;}
+  .stat-tile{display:grid;grid-template-columns:1fr auto;align-items:baseline;column-gap:1rem;
+    padding:.55rem 0;border-bottom:1px solid var(--parchment-deep);}
+  .stat-tile:first-child{border-top:1px solid var(--parchment-deep);}
+  .stat-tile__label{grid-column:1;grid-row:1;margin:0;}
+  .stat-tile__sub{grid-column:1;grid-row:2;margin:0;}
+  .stat-tile__value{grid-column:2;grid-row:1 / span 2;align-self:center;font-size:1.6rem;}
+  .report__exams{grid-template-columns:repeat(3,minmax(0,1fr));}
+  /* SVG text is in viewBox units (600 wide); at 320px that's ~0.4x,
+     so 9-unit labels rendered ~3.5px. Scale them up to ~10px. */
+  .chart-target-label,.chart-axis-label{font-size:24px;}
+  .chart-line{stroke-width:4;}
+  .chart-dot{stroke-width:3;r:6px;}
+}
+
+/* Map: fixed-height box with a fallback link behind the iframe, so a
+   blocked/failed embed shows "Lihat di peta" instead of empty space. */
+.contact__map-wrap{position:relative;height:190px;margin:1.1rem 0;background:var(--parchment-dim);
+  border:1px solid var(--parchment-deep);display:flex;align-items:center;justify-content:center;}
+.contact__map-wrap .contact__map{position:absolute;inset:0;height:100%;margin:0;}
+
+/* Mobile: iOS Safari zooms on focus for inputs under 16px; tap targets >=44px. */
+@media (max-width:1023px){
+  .form input,.form textarea{font-size:1rem;}
+  .form input{min-height:44px;}
+  .btn{min-height:44px;}
+  .mini-header__login,.mini-header__cta{min-height:44px;display:inline-flex;align-items:center;}
+  .mini-header__brand{min-height:44px;}
+  .contact__directions{display:inline-flex;align-items:center;min-height:44px;}
+}

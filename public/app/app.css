@@ -971,3 +971,69 @@ thead .register-name { background: var(--parchment-dim); z-index: 3; }
 .portal-body--guru .attendance-row__name { white-space: normal; overflow-wrap: anywhere; }
 .portal-body--guru .status-segmented__btn { min-width: 2.75rem; min-height: 44px; }
 .portal-body--guru .btn--small { min-height: 44px; }
+
+/* =====================================================================
+   Responsive fixes (2026-11 audit) — layout/sizing only, same design.
+   ===================================================================== */
+
+/* Long names wrap everywhere (admin Ambil Kehadiran too), never "…". */
+.attendance-row__name { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+.modal__head h2 { min-width: 0; overflow-wrap: anywhere; }
+
+/* Stacked cards: label and value share the row, so a value with an
+   attribution line ("Direkod oleh Ustaz Ahmad") no longer gets squeezed
+   to one word per line beside a long label at 320px. */
+@media (max-width: 760px) {
+  .stack-table td::before { flex-shrink: 1; max-width: 48%; }
+  .stack-table td > .cell-stack { min-width: 0; max-width: 60%; }
+}
+
+/* Modals: scroll inside, header (with close) stays pinned, and the box
+   is sized to the dynamic viewport so the on-screen keyboard can't
+   push content out of reach. margin:auto centres it when it fits and
+   lets the overlay scroll when it doesn't. */
+.modal-overlay { overflow-y: auto; padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left)); }
+@media (min-width: 640px) { .modal-overlay { padding: var(--space-m); } }
+.modal { margin: auto; max-height: 88vh; max-height: calc(100dvh - 1.5rem); overscroll-behavior: contain; }
+.modal__head {
+  position: sticky;
+  top: calc(-1 * var(--space-m)); /* Chrome/Safari pin sticky to the content edge, i.e. inside the padding */
+  z-index: 2;
+  margin: calc(-1 * var(--space-m)) calc(-1 * var(--space-m)) 0.9rem;
+  padding: var(--space-m) var(--space-m) 0.5rem;
+  background: var(--parchment);
+  align-items: flex-start;
+}
+.modal__close { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; margin: -0.6rem -0.6rem 0 0; border-radius: 50%; }
+.modal__close:hover { background: rgba(43, 35, 24, 0.08); }
+
+/* iPhone notch/home indicator (admin + guru use viewport-fit=cover). */
+.portal-body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+.attendance-savebar { padding-left: max(var(--space-m), env(safe-area-inset-left)); padding-right: max(var(--space-m), env(safe-area-inset-right)); }
+.toast { bottom: calc(var(--space-m) + env(safe-area-inset-bottom)); max-width: calc(100vw - 2rem); }
+
+/* Mobile/tablet: >=16px form text (iOS Safari zooms the page on focus
+   below that) and >=44px tap targets. Desktop sizes unchanged. */
+@media (max-width: 1023px) {
+  .field input, .field select, .field textarea,
+  .data-table input.mark-cell-input { font-size: 1rem; }
+  .field input, .field select, .data-table input.mark-cell-input, .mark-row-input { min-height: 44px; }
+  .btn--small, .sittings-row .btn { min-height: 44px; }
+  .portal-tabs__btn, .subtabs__btn { min-height: 44px; }
+  .status-segmented__btn { min-width: 2.75rem; min-height: 44px; }
+  .row-delete-btn { min-width: 44px; min-height: 44px; }
+  .checkbox-field { min-height: 44px; }
+  .chip { padding-top: 0.15rem; padding-bottom: 0.15rem; }
+  .chip button, .chip__reactivate { min-width: 44px; min-height: 44px; }
+  .chip__label { min-height: 44px; }
+  .link-btn, .login-back, .fee-history summary { display: inline-flex; align-items: center; min-height: 44px; }
+  .register-table td.register-cell { height: 44px; min-width: 44px; }
+}
+
+/* Tasmik card at phone width: the nowrap meta ("Tahfiz 1 · 5.5 / 30
+   Juzuk") took the row and squeezed names to one word per line —
+   put the meta on its own line under the name instead. */
+@media (max-width: 480px) {
+  .tasmik-card summary { grid-template-columns: 1fr; }
+  .tasmik-card__meta { white-space: normal; }
+}

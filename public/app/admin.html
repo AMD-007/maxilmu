@@ -2,7 +2,7 @@
 <html lang="ms">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>Panel Admin — Maahad Cahaya Ilmu</title>
 <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
@@ -16,7 +16,7 @@
 
 <header class="portal-header">
   <div class="portal-header__brand">
-    <span class="mark-crop portal-header__mark"><img src="../logo-transparent.png" data-config-logo data-config-alt="name" alt="Lambang Maahad Cahaya Ilmu"></span>
+    <span class="mark-crop portal-header__mark"><img src="../logo-transparent.png" width="640" height="640" data-config-logo data-config-alt="name" alt="Lambang Maahad Cahaya Ilmu"></span>
     <div>
       <strong data-config="name">Maahad Cahaya Ilmu</strong>
       <span class="portal-header__sub">Panel Admin</span>
@@ -625,7 +625,7 @@
     openModal(`
       <div class="modal__head">
         <h2>Status — ${escapeHtml(student.name)}</h2>
-        <button class="modal__close" type="button" data-close>&times;</button>
+        <button class="modal__close" type="button" data-close aria-label="Tutup">&times;</button>
       </div>
       <p class="card__hint">${escapeHtml(student.className)}</p>
       <div id="status-modal-body"></div>
@@ -670,7 +670,7 @@
     openModal(`
       <div class="modal__head">
         <h2>${escapeHtml(student.name)}</h2>
-        <button class="modal__close" type="button" data-close>&times;</button>
+        <button class="modal__close" type="button" data-close aria-label="Tutup">&times;</button>
       </div>
       <p class="card__hint">${escapeHtml(student.className)} · Ibu bapa: ${escapeHtml(student.parentName)}</p>
       <h3 style="font-size:0.86rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin: 1rem 0 0.5rem;">Keputusan Peperiksaan</h3>
@@ -821,7 +821,7 @@
     openModal(`
       <div class="modal__head">
         <h2>Hafazan — ${escapeHtml(student.name)}</h2>
-        <button class="modal__close" type="button" data-close>&times;</button>
+        <button class="modal__close" type="button" data-close aria-label="Tutup">&times;</button>
       </div>
       <p class="card__hint">${escapeHtml(student.className)}</p>
       <div id="hafazan-modal-body"></div>
@@ -906,7 +906,7 @@
     openModal(`
       <div class="modal__head">
         <h2>Kehadiran — ${escapeHtml(student.name)}</h2>
-        <button class="modal__close" type="button" data-close>&times;</button>
+        <button class="modal__close" type="button" data-close aria-label="Tutup">&times;</button>
       </div>
       <p class="card__hint">${escapeHtml(student.className)}</p>
       <div id="attendance-modal-body"></div>
@@ -1527,7 +1527,7 @@
     openModal(`
       <div class="modal__head">
         <h2>Yuran — ${escapeHtml(student.name)}${student.status !== "aktif" ? ` <span class="pill pill--inactive">${escapeHtml(STUDENT_STATUSES[student.status].label)}</span>` : ""}</h2>
-        <button class="modal__close" type="button" data-close>&times;</button>
+        <button class="modal__close" type="button" data-close aria-label="Tutup">&times;</button>
       </div>
       <div id="ledger-modal-body"></div>
       <div class="modal__actions">
@@ -1556,7 +1556,7 @@
     openModal(`
       <div class="modal__head">
         <h2>Cajkan Yuran Secara Pukal</h2>
-        <button class="modal__close" type="button" data-close>&times;</button>
+        <button class="modal__close" type="button" data-close aria-label="Tutup">&times;</button>
       </div>
       <p class="card__hint">Satu caj akan ditambah kepada ledger yuran setiap pelajar yang dipilih di bawah.</p>
       <div class="field">
@@ -1918,7 +1918,7 @@
     openModal(`
       <div class="modal__head">
         <h2>Namakan Semula Jenis Yuran</h2>
-        <button class="modal__close" type="button" data-close>&times;</button>
+        <button class="modal__close" type="button" data-close aria-label="Tutup">&times;</button>
       </div>
       <div class="field">
         <label for="rename-feetype-input">Nama</label>

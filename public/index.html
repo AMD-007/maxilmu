@@ -37,7 +37,7 @@
 <body>
 
 <header class="mini-header" id="miniHeader">
-  <a href="#top" class="mini-header__brand"><img src="logo-transparent.png" data-config-logo alt=""><span data-config="name">Maahad Cahaya Ilmu</span></a>
+  <a href="#top" class="mini-header__brand"><img src="logo-transparent.png" width="640" height="640" data-config-logo alt=""><span data-config="name">Maahad Cahaya Ilmu</span></a>
   <div class="mini-header__actions">
     <a class="mini-header__login" href="app/login.html">Log Masuk</a>
     <a class="mini-header__cta" data-wa-link href="https://wa.me/" target="_blank" rel="noopener">WhatsApp</a>
@@ -46,9 +46,9 @@
 
 <!-- ============ HERO — frontispiece photo + pasted label ============ -->
 <section class="hero" id="top">
-  <div class="hero__photo"><img src="images/hero-exterior.jpg" alt="Anak-anak murid berjalan menuju bangunan pondok pada waktu pagi"></div>
+  <div class="hero__photo"><img src="images/hero-exterior.jpg" width="1376" height="768" alt="Anak-anak murid berjalan menuju bangunan pondok pada waktu pagi"></div>
   <div class="hero__label">
-    <span class="hero__mark"><img src="logo-transparent.png" data-config-logo data-config-alt="name" alt="Lambang Maahad Cahaya Ilmu"></span>
+    <span class="hero__mark"><img src="logo-transparent.png" width="640" height="640" data-config-logo data-config-alt="name" alt="Lambang Maahad Cahaya Ilmu"></span>
     <p class="hero__arabic" lang="ar" dir="rtl" data-config="nameArabic">معهد نور العلم</p>
     <h1 class="hero__name" data-config="name">Maahad Cahaya Ilmu</h1>
     <p class="hero__mission" data-config="tagline">Menghafaz Al-Quran, membina peribadi, menyediakan masa depan.</p>
@@ -87,7 +87,7 @@
   <div class="spread">
     <article class="page page--left">
       <div class="page__photo">
-        <img src="images/hafazan-class.jpg" alt="Pelajar duduk bersila membaca mushaf semasa sesi tasmik hafazan" loading="lazy">
+        <img src="images/hafazan-class.jpg" width="1200" height="896" alt="Pelajar duduk bersila membaca mushaf semasa sesi tasmik hafazan" loading="lazy">
         <span class="page__numeral" aria-hidden="true">١</span>
       </div>
       <div class="page__photo-torn" aria-hidden="true"></div>
@@ -107,7 +107,7 @@
 
     <article class="page page--right">
       <div class="page__photo">
-        <img src="images/akademik-class.jpg" alt="Pelajar menulis di meja semasa kelas akademik, guru di hadapan papan putih" loading="lazy">
+        <img src="images/akademik-class.jpg" width="1200" height="896" alt="Pelajar menulis di meja semasa kelas akademik, guru di hadapan papan putih" loading="lazy">
         <span class="page__numeral" aria-hidden="true">٢</span>
       </div>
       <div class="page__photo-torn" aria-hidden="true"></div>
@@ -196,7 +196,11 @@
       <h3>Alamat</h3>
       <address id="contact-address">Maahad Cahaya Ilmu<br>Kuala Terengganu<br>Terengganu, Malaysia</address>
       <a class="contact__directions" id="contact-map-link" href="https://www.google.com/maps?q=Kuala+Terengganu,+Terengganu" target="_blank" rel="noopener">Lihat di peta →</a>
-      <iframe class="contact__map" id="contact-map-frame" src="https://www.google.com/maps?q=Kuala+Terengganu,+Terengganu&z=12&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Peta kawasan Kuala Terengganu (ilustrasi, bukan lokasi sebenar)"></iframe>
+      <div class="contact__map-wrap">
+        <!-- Fallback, sits behind the iframe: visible only if the embed fails or is blocked. The real link is above, so this copy is hidden from AT/tab order. -->
+        <a class="contact__directions" id="contact-map-fallback" href="https://www.google.com/maps?q=Kuala+Terengganu,+Terengganu" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">Lihat di peta →</a>
+        <iframe class="contact__map" id="contact-map-frame" src="https://www.google.com/maps?q=Kuala+Terengganu,+Terengganu&z=12&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Peta kawasan Kuala Terengganu (ilustrasi, bukan lokasi sebenar)"></iframe>
+      </div>
       <a class="btn" data-wa-link href="https://wa.me/" target="_blank" rel="noopener">Hubungi melalui WhatsApp</a>
     </div>
     <form class="form" id="contact-form" novalidate>
@@ -210,7 +214,7 @@
 </section>
 
 <footer class="footer">
-  <span class="footer__mark"><img src="logo-transparent.png" data-config-logo alt="" loading="lazy"></span>
+  <span class="footer__mark"><img src="logo-transparent.png" width="640" height="640" data-config-logo alt="" loading="lazy"></span>
   <p class="footer__ar" lang="ar" dir="rtl" data-config="nameArabic">معهد نور العلم</p>
   <p><span data-config="name">Maahad Cahaya Ilmu</span> &middot; <span data-config="location">Kuala Terengganu</span></p>
   <p>&copy; 2026. Hak cipta terpelihara.</p>
