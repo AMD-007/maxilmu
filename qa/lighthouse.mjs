@@ -7,6 +7,7 @@ const BASE = `http://localhost:${port}`;
 const PAGES = [
   ["index", "/index.html"],
   ["app/login", "/app/login.html"],
+  ["app/admin", "/app/admin.html", { role: "admin" }],
   ["app/guru (Ahmad)", "/app/guru.html", { role: "guru", teacherId: "g_ahmad" }],
   ["app/parent (s7)", "/app/parent.html", { role: "parent", studentId: "s7" }],
 ];
