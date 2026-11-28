@@ -315,7 +315,17 @@ function seedExtraTahfiz1Student(id, name, parentName, phone, halaqahId, attenda
 // ── Seed data — replaced entirely once an admin edits anything;
 //    exists only so the demo has something to show on first load ──
 function defaultState() {
-  return seedAuthorship(baseSeedState());
+  return seedAuthorship(trimSeedAfterLeaving(baseSeedState()));
+}
+
+// A tidak-aktif seed student never has attendance after the day they
+// left (leftOn). s4 is already generated up to that date; this is the
+// guarantee for any inactive seed student added later.
+function trimSeedAfterLeaving(state) {
+  state.students.forEach((s) => {
+    if (s.status !== "aktif" && s.leftOn) s.attendanceLog = s.attendanceLog.filter((e) => e.date <= s.leftOn);
+  });
+  return state;
 }
 
 function baseSeedState() {
@@ -536,6 +546,7 @@ function baseSeedState() {
       })(),
       (() => {
       const className = "Tahfiz 1";
+      const leftOn = "2026-08-07";
       // Deliberately the demo's one "tidak-aktif" student (Part 2) —
       // moved schools mid-year, but keeps every mark/attendance/
       // hafazan record exactly as it was, still fully viewable via
@@ -550,6 +561,7 @@ function baseSeedState() {
         parentPhone: "60100000004",  // demo-only — not a real number
         status: "tidak-aktif",
         statusReason: "Pindah Sekolah",
+        leftOn, // last school day; seed attendance stops here
         examRecords: [{
           id: "er_s4_2026",
           academicYear: CURRENT_ACADEMIC_YEAR,
@@ -565,7 +577,7 @@ function baseSeedState() {
         // "tidak-hadir" days at all, leaving nothing for
         // capUnresolvedAbsences to draw an unresolved/rate-setting
         // pool from. keep=4 -> ~97%.
-        attendanceLog: stampSnapshot(capUnresolvedAbsences(generateAttendanceLog("a4", "2026-01-05", attendanceEnd, 94, 40504, null), 4), className),
+        attendanceLog: stampSnapshot(capUnresolvedAbsences(generateAttendanceLog("a4", "2026-01-05", attendanceEnd < leftOn ? attendanceEnd : leftOn, 94, 40504, null), 4), className),
         hafazanLog: stampSnapshot([
           { id: "h4a", date: "2026-02-02", amount: 0.5, note: "" },
           { id: "h4b", date: "2026-02-23", amount: 0.5, note: "" },
