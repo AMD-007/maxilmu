@@ -15,14 +15,16 @@
 //   yMax: top of the y-axis,
 //   target: optional dashed reference line value,
 //   targetLabel: label drawn next to the target line,
-//   emptyMessage: shown instead of a chart when points is empty,
 //   ariaLabel: accessible label for the <svg>,
 //   formatXLabel(point, index): x-axis tick text,
 //   formatTooltip(point): <title> text for each dot,
 // }
+// No points: the chart area is hidden. Every caller already shows a
+// "Belum ada rekod…" note in its table, so a second one here repeated it.
 function renderLineChart(mountEl, points, opts) {
+  mountEl.hidden = !points.length;
   if (!points.length) {
-    mountEl.innerHTML = `<p class="empty-note">${opts.emptyMessage}</p>`;
+    mountEl.innerHTML = "";
     return;
   }
 
@@ -87,7 +89,6 @@ function renderHafazanChart(mountEl, cumulativePoints, target, unitLabel) {
     yMax: Math.max(target, last) * 1.08,
     target,
     targetLabel: `Sasaran: ${target} ${unitLabel}`,
-    emptyMessage: "Belum ada rekod hafazan mingguan.",
     ariaLabel: `Graf kemajuan hafazan mingguan, ${last} daripada ${target} ${unitLabel}`,
     formatXLabel: (p) => formatDateShort(p.x),
     formatTooltip: (p) => `${formatDate(p.x)}: ${p.y} ${unitLabel}`,
@@ -102,7 +103,6 @@ function renderAttendanceChart(mountEl, ratePoints, target) {
     yMax: 100,
     target,
     targetLabel: `Sasaran: ${target}%`,
-    emptyMessage: "Belum ada rekod kehadiran bulanan.",
     ariaLabel: `Graf kehadiran bulanan, ${last}% bulan terkini berbanding sasaran ${target}%`,
     formatXLabel: (p) => formatMonthShort(p.x),
     formatTooltip: (p) => `${formatMonth(p.x)}: ${p.y}%`,
