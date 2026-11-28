@@ -983,6 +983,13 @@ function countStudentsWithMarkFor(state, subject) {
   ).length;
 }
 
+// Total individual marks recorded under `subject` (every student, year
+// and sitting) — what the remove-subject confirm reports.
+function countMarksFor(state, subject) {
+  return state.students.reduce((sum, s) => sum + s.examRecords.reduce((n, record) =>
+    n + EXAM_PERIODS.filter((exam) => Object.prototype.hasOwnProperty.call(record.marks[exam.key], subject)).length, 0), 0);
+}
+
 // ── Exam helpers ─────────────────────────────────────────────────
 // One examRecords entry per academic year — see the v5->v6 note near
 // STORAGE_KEY for why a single mutable `exams` blob couldn't carry

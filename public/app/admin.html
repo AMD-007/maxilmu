@@ -2070,19 +2070,22 @@
   });
 
   function removeSubject(name) {
+    const marks = countMarksFor(state, name);
     const affected = countStudentsWithMarkFor(state, name);
-    let proceed = true;
-    if (affected > 0) {
-      proceed = confirm(
-        `${affected} pelajar sudah mempunyai markah direkodkan untuk "${name}". ` +
-        `Membuang subjek ini akan menyembunyikannya daripada senarai aktif dan borang keputusan baharu — ` +
-        `markah sedia ada pelajar TIDAK akan dipadam. Teruskan?`
-      );
-    } else {
-      proceed = confirm(`Buang subjek "${name}" daripada senarai?`);
-    }
-    if (!proceed) return;
+    const isSubjectTask = (a) => a.type === "kelas" && a.subject === name;
+    const assigned = state.settings.teachers
+      .filter((t) => t.assignments.some(isSubjectTask))
+      .map((t) => `${t.name} (${t.assignments.filter(isSubjectTask).map((a) => a.classId).join(", ")})`);
+    const lines = [`Buang subjek "${name}" daripada senarai?`];
+    lines.push(marks > 0
+      ? `• ${marks} markah sedia ada (${affected} pelajar) — TIDAK dipadam, cuma disembunyikan daripada borang keputusan.`
+      : "• Tiada markah direkodkan untuk subjek ini.");
+    lines.push(assigned.length
+      ? `• Guru ditugaskan: ${assigned.join("; ")} — tugasan ini akan dibuang.`
+      : "• Tiada guru ditugaskan untuk subjek ini.");
+    if (!confirm(lines.join("\n"))) return;
     state.settings.subjects = state.settings.subjects.filter((s) => s !== name);
+    state.settings.teachers.forEach((t) => { t.assignments = t.assignments.filter((a) => !isSubjectTask(a)); });
     // Note: we deliberately do NOT touch any student's examRecords
     // marks for this subject here — a student's historical mark under
     // a removed subject is preserved, just no longer shown in the
@@ -2090,7 +2093,8 @@
     persist();
     renderSubjectChips();
     renderStudentTable();
-    showToast(`Subjek "${name}" dibuang daripada senarai aktif.`);
+    renderGuruPanel();
+    showToast(`Subjek "${name}" dibuang daripada senarai aktif${assigned.length ? ` dan ${assigned.length} tugasan guru` : ""}.`);
   }
 
   document.getElementById("btn-save-hafazan").addEventListener("click", () => {
