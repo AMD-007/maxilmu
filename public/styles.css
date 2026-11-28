@@ -9,7 +9,7 @@
   --malachite: #3D7A5C;
   --malachite-ink: #376E53;
   --gold: #B8934A;
-  --gold-ink: #816734;
+  --gold-ink: #755D2F; /* was #816734 (4.24:1 on parchment-dim); darkened, same hue, for AA */
   --gold-soft: #CBAE73;
   --error: #9C3D26; /* rubrication red — the corrective ink of illuminated manuscripts, used for form error states */
   --parchment: #F6F0E4;
@@ -18,7 +18,7 @@
   --ink: #2B2318;
   --ink-soft: #6B6152;
   --on-indigo: #EFE9D8;
-  --on-indigo-soft: #B9B6C9;
+  --on-indigo-soft: #DAD9E3; /* was #B9B6C9 (3.19:1 on teal header); lightened, same hue, for AA */
 
   --font-display: "Fraunces", "Georgia", serif;
   --font-arabic: "Amiri", serif;

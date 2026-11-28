@@ -28,7 +28,7 @@
 .portal-header__brand strong { font-family: var(--font-display); font-size: 1.05rem; display: block; }
 .portal-header__sub { font-size: 0.74rem; color: var(--on-indigo-soft); }
 .portal-header__actions { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-.portal-header__credit { font-size: 0.68rem; color: var(--on-indigo-soft); opacity: 0.85; white-space: nowrap; }
+.portal-header__credit { font-size: 0.68rem; color: var(--on-indigo-soft); white-space: nowrap; } /* no opacity: it dropped contrast to 2.72:1 */
 
 /* ---- Tabs ---------------------------------------------------- */
 .portal-tabs {
@@ -153,7 +153,7 @@
 }
 .stat-pill small { font-family: var(--font-body); font-size: 0.62em; font-weight: 700; color: var(--ink-soft); }
 
-.cell-muted { color: var(--ink-soft); opacity: 0.6; }
+.cell-muted { color: var(--ink-soft); } /* opacity 0.6 made it 2.45:1 */
 
 .settings-grid {
   display: grid;
@@ -339,20 +339,21 @@
   padding: 0.2rem 0.6rem;
   border-radius: 100px;
   background: rgba(61, 122, 92, 0.14);
-  color: var(--malachite-ink);
+  color: #34674E; /* --malachite-ink (#376E53) was 4.41:1 on the pill tint */
   white-space: nowrap;
 }
 .pill--owing { background: rgba(156, 61, 38, 0.12); color: var(--error); }
-.pill--clear { background: rgba(61, 122, 92, 0.14); color: var(--malachite-ink); }
-.pill--inactive { background: rgba(43, 35, 24, 0.1); color: var(--ink-soft); }
+.pill--clear { background: rgba(61, 122, 92, 0.14); color: #34674E; }
+.pill--inactive { background: rgba(43, 35, 24, 0.1); color: #655B4D; } /* --ink-soft was 4.45:1 on this tint */
 .pill--bersurat { background: rgba(42, 47, 92, 0.12); color: var(--indigo); }
 
 /* A visible-but-de-emphasized row for an inactive student revealed via
    "Tunjuk Pelajar Tidak Aktif" (or already in the Yuran list, which
    never filters them out) — legible, not hidden, just visually
    secondary to the aktif rows around it. */
-.is-inactive-row { opacity: 0.6; }
-.is-inactive-row:hover { opacity: 0.85; }
+/* De-emphasised with softer ink instead of opacity: opacity 0.6 faded
+   everything in the row (text, pills, buttons) to 1.6-4.0:1. */
+.is-inactive-row > td { color: var(--ink-soft); }
 
 /* ---- Forms ------------------------------------------------------- */
 .field { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.85rem; }

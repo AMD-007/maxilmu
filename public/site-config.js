@@ -52,7 +52,7 @@ const SITE_CONFIG = {
     malachite: "#3D7A5C",
     malachiteInk: "#376E53",
     gold: "#B8934A",
-    goldInk: "#816734",
+    goldInk: "#755D2F", // was #816734: 4.24:1 on parchmentDim, under AA
     goldSoft: "#CBAE73",
     parchment: "#F6F0E4",
     parchmentDim: "#EEE4CE",
