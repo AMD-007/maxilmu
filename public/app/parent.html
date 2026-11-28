@@ -206,6 +206,27 @@
     `;
   }
 
+  // Long logs: show the latest `limit` rows, rest behind a toggle.
+  // Charts/totals above still use every record — this only trims the list.
+  function collapseRows(wrap, limit, moreLabel) {
+    const extra = [...wrap.querySelectorAll("tbody tr")].slice(limit);
+    if (!extra.length) return;
+    extra.forEach((tr) => { tr.hidden = true; });
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "link-btn show-all-btn";
+    btn.setAttribute("aria-expanded", "false");
+    btn.textContent = moreLabel;
+    btn.addEventListener("click", () => {
+      const open = btn.getAttribute("aria-expanded") !== "true";
+      extra.forEach((tr) => { tr.hidden = !open; });
+      btn.setAttribute("aria-expanded", String(open));
+      btn.textContent = open ? "Tunjuk kurang" : moreLabel;
+    });
+    wrap.after(btn);
+  }
+  if (attendancePoints.length) collapseRows(attendanceTableWrap, 3, `Lihat semua (${attendancePoints.length} bulan)`);
+
   // ── Hafazan — weekly log rendered as table + cumulative chart ───
   document.getElementById("hafazan-title").textContent = `Hafazan (${hafazanUnitLabel(hafazan.unit, 2)})`;
   document.getElementById("hafazan-pct-meta").textContent = `${hafazanPct}% daripada sasaran`;
@@ -236,6 +257,8 @@
       </table>
     `;
   }
+
+  if (points.length) collapseRows(hafazanTableWrap, 5, `Lihat semua (${points.length} rekod)`);
 
   // ── Yuran — only built into the DOM when FEATURES.finance is true ──
   if (FEATURES.finance) {

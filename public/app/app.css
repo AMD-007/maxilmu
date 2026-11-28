@@ -1051,3 +1051,8 @@ thead .register-name { background: var(--parchment-dim); z-index: 3; }
   .results-table[data-show="pertengahan"] [data-col]:not([data-col="pertengahan"]),
   .results-table[data-show="akhir"] [data-col]:not([data-col="akhir"]) { display: none; }
 }
+
+/* Parent page "Lihat semua" — stacked-table rows are display:block,
+   which would beat the [hidden] attribute without this. */
+.data-table tr[hidden] { display: none !important; }
+.show-all-btn { margin-top: 0.6rem; font-weight: 700; min-height: 44px; }
