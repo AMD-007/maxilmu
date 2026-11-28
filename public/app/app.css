@@ -1057,3 +1057,12 @@ thead .register-name { background: var(--parchment-dim); z-index: 3; }
    which would beat the [hidden] attribute without this. */
 .data-table tr[hidden] { display: none !important; }
 .show-all-btn { margin-top: 0.6rem; font-weight: 700; min-height: 44px; }
+
+/* Admin tab strip at <=414px: right-edge fade while more tabs are
+   off-screen (class set by a small script in admin.html). */
+@media (max-width: 414px) {
+  .portal-tabs.has-more {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+  }
+}

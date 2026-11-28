@@ -2133,5 +2133,19 @@
   renderSettings();
 })();
 </script>
+<script>
+// Tab strip fade (<=414px, see .portal-tabs.has-more in app.css): shows
+// there are more tabs (e.g. Tetapan) off to the right; gone at scroll end.
+(function () {
+  const nav = document.getElementById("portal-tabs");
+  if (!nav) return;
+  function update() {
+    nav.classList.toggle("has-more", nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 2);
+  }
+  nav.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", update);
+  update();
+})();
+</script>
 </body>
 </html>
