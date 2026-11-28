@@ -38,6 +38,7 @@ const today = new Date(), tomorrow = new Date(Date.now() + 864e5), lastWeek = ne
   // ── H1 Tambah / Edit Pelajar ────────────────────────────────────
   const count0 = (await st(a)).students.length;
   await a.click("#btn-add-student");
+  ok("HID", "Tambah opens on Tahfiz 1 -> 'Nama kelas baharu' hidden", (await a.inputValue("#sf-class")) === "Tahfiz 1" && await a.isHidden("#sf-newclass-field"));
   await a.click('#student-form button[type="submit"]');
   ok("H1", "bad: empty Nama -> inline error, aria-invalid, not saved",
     (await a.textContent("#sf-name-err")).length > 0 && (await a.getAttribute("#sf-name", "aria-invalid")) === "true" && (await st(a)).students.length === count0);
@@ -46,9 +47,11 @@ const today = new Date(), tomorrow = new Date(Date.now() + 864e5), lastWeek = ne
   await a.click('#student-form button[type="submit"]');
   ok("H1", "bad: phone 0123456789 -> 601X error", /601/.test(await a.textContent("#sf-phone-err")) && (await st(a)).students.length === count0);
   await a.selectOption("#sf-class", "__new__"); await a.fill("#sf-phone", "");
+  ok("HID", "pick 'Kelas baharu…' -> field shown", await a.isVisible("#sf-newclass-field"));
   await a.click('#student-form button[type="submit"]');
   ok("H1", "bad: Kelas baharu with no name -> error", (await a.textContent("#sf-newclass-err")).length > 0 && (await st(a)).students.length === count0);
   await a.selectOption("#sf-class", "Tahfiz 1"); await a.selectOption("#sf-halaqah", "hq_a");
+  ok("HID", "back to Tahfiz 1 -> field hidden again", await a.isHidden("#sf-newclass-field"));
   await a.fill("#sf-parent", "Abu bin Bakar"); await a.fill("#sf-phone", "60123456789");
   await a.click('#student-form button[type="submit"]');
   let s = await st(a); const ali = s.students.find((x) => x.name === "Ali bin Abu");
@@ -80,6 +83,37 @@ const today = new Date(), tomorrow = new Date(Date.now() + 864e5), lastWeek = ne
   await loginGuru(lp, "g_hakim");
   ok("H1", "good: Ali in Ustaz Hakim's Halaqah A", (await lp.$$eval(".tasmik-card__name", (n) => n.map((x) => x.textContent))).includes("Ali bin Abu"));
   await lp.close();
+
+  // [hidden] beats display rules elsewhere too
+  await clickRow(a, '[data-edit-student="s7"]');
+  ok("HID", "Edit s7 -> 'Nama kelas baharu' hidden", (await a.inputValue("#sf-class")) === "Tahfiz 1" && await a.isHidden("#sf-newclass-field"));
+  await a.click("[data-close]");
+  await clickRow(a, '[data-edit-status="s7"]');
+  const reasonHiddenAtOpen = await a.isHidden("#status-reason-custom-field");
+  await a.selectOption("#status-reason-select", "__custom__");
+  ok("HID", "Status modal: 'Nyatakan sebab' hidden until Lain-lain", reasonHiddenAtOpen && await a.isVisible("#status-reason-custom-field"));
+  await a.click("[data-close]");
+
+  // Empty states: one "Belum ada rekod" note each, empty chart area hidden
+  const notes = (p, scope, text) => p.$$eval(`${scope} .empty-note`, (els, t) => els.filter((e) => e.textContent.trim() === t && e.getClientRects().length).length, text);
+  await clickRow(a, `[data-edit-hafazan="${ali.id}"]`);
+  ok("EMPTY", "admin hafazan modal (no records): note once, chart hidden", (await notes(a, "#modal-root", "Belum ada rekod hafazan mingguan.")) === 1 && await a.isHidden("#hafazan-chart-mount"));
+  await a.click("[data-close]");
+  await clickRow(a, `[data-edit-attendance="${ali.id}"]`);
+  ok("EMPTY", "admin kehadiran modal (no records): note once, chart hidden", (await notes(a, "#modal-root", "Belum ada rekod kehadiran bulanan.")) === 1 && await a.isHidden("#attendance-chart-mount"));
+  await a.click("[data-close]");
+  await clickRow(a, '[data-edit-hafazan="s7"]');
+  ok("EMPTY", "admin hafazan modal (with records): chart shown", await a.isVisible("#hafazan-chart-mount svg"));
+  await a.click("[data-close]");
+  const pp = await page();
+  for (const [sid, empty] of [[ali.id, true], ["s7", false]]) {
+    await pp.goto(B + "login.html"); await pp.selectOption("#parent-student-select", sid); await pp.click("#btn-parent-login"); await pp.waitForURL(/parent.html/);
+    const att = await notes(pp, "body", "Belum ada rekod kehadiran bulanan."), haf = await notes(pp, "body", "Belum ada rekod hafazan mingguan.");
+    const charts = [await pp.isVisible("#attendance-chart-mount"), await pp.isVisible("#hafazan-chart-mount")];
+    ok("EMPTY", `parent ${empty ? "no records: each note once, charts hidden" : "s7: no notes, charts shown"}`,
+      empty ? att === 1 && haf === 1 && !charts[0] && !charts[1] : att === 0 && haf === 0 && charts[0] && charts[1], JSON.stringify({ att, haf, charts }));
+  }
+  await pp.close();
 
   // Edit: s5 Tahfiz 1 -> Tahfiz 2; old records keep classAtTime
   await a.reload();
