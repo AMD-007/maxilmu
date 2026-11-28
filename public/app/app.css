@@ -948,3 +948,19 @@ thead .register-name { background: var(--parchment-dim); z-index: 3; }
    the stacked-card layout keeps them right-aligned as a pair. */
 .cell-stack { display: inline-block; }
 @media (max-width: 760px) { .stack-table .cell-stack { text-align: right; } }
+
+/* Kunci & Terbitkan rows (admin Pelajar tab) */
+.sittings-list { display: grid; gap: 0.5rem; }
+.sittings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--parchment);
+  border: 1px solid rgba(43, 35, 24, 0.1);
+  border-radius: 6px;
+}
+.sittings-row__info { display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem 0.6rem; font-size: 0.88rem; }
+.sittings-row .btn { min-height: 40px; }

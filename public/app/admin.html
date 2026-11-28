@@ -50,6 +50,9 @@
 
     <div class="stat-grid" id="dashboard-stats"></div>
 
+    <!-- Kunci & Terbitkan — one row per exam sitting. See renderSittingsCard(). -->
+    <div class="card sittings-card" id="sittings-card" style="margin-bottom: var(--space-m);"></div>
+
     <label class="checkbox-field" style="margin-bottom: var(--space-s);">
       <input type="checkbox" id="toggle-show-inactive">
       Tunjuk Pelajar Tidak Aktif
@@ -469,6 +472,48 @@
   document.getElementById("toggle-show-inactive").addEventListener("change", renderStudentTable);
 
   // ================================================================
+  // KUNCI & TERBITKAN — per exam sitting. Draf: gurus can key in,
+  // parents see nothing. Diterbitkan: locked for gurus, visible to
+  // parents. "Buka Semula" exists so a mis-tap isn't permanent; the
+  // admin can always correct marks either way.
+  // ================================================================
+  function renderSittingsCard() {
+    const card = document.getElementById("sittings-card");
+    const aktif = state.students.filter((s) => s.status === "aktif");
+    card.innerHTML = `
+      <h2>Peperiksaan ${escapeHtml(CURRENT_ACADEMIC_YEAR)} — Kunci &amp; Terbitkan</h2>
+      <p class="card__hint">Ibu bapa hanya nampak keputusan peperiksaan yang telah diterbitkan. Selepas diterbitkan, guru tidak boleh mengubah markah lagi.</p>
+      <div class="sittings-list">
+        ${EXAM_PERIODS.map((exam) => {
+          const published = isSittingPublished(state, CURRENT_ACADEMIC_YEAR, exam.key);
+          const withMarks = aktif.filter((s) => examAverage(state, s, exam.key) !== null).length;
+          return `
+            <div class="sittings-row">
+              <div class="sittings-row__info">
+                <strong>${escapeHtml(exam.label)}</strong>
+                <span class="pill ${published ? "pill--clear" : "pill--inactive"}">${published ? "Diterbitkan" : "Draf"}</span>
+                <span class="cell-muted">${withMarks}/${aktif.length} pelajar ada markah</span>
+              </div>
+              <button class="btn ${published ? "btn--secondary" : ""} btn--small" type="button" data-sitting="${exam.key}" data-sitting-action="${published ? "draf" : "terbit"}">${published ? "Buka Semula" : "Kunci &amp; Terbitkan"}</button>
+            </div>`;
+        }).join("")}
+      </div>
+    `;
+    card.querySelectorAll("[data-sitting]").forEach((btn) => btn.addEventListener("click", () => {
+      const exam = EXAM_PERIODS.find((e) => e.key === btn.dataset.sitting);
+      const toPublish = btn.dataset.sittingAction === "terbit";
+      const ok = confirm(toPublish
+        ? `Kunci & terbitkan ${exam.label} ${CURRENT_ACADEMIC_YEAR}? Ibu bapa akan nampak keputusan ini dan guru tidak boleh mengubah markah lagi.`
+        : `Buka semula ${exam.label} ${CURRENT_ACADEMIC_YEAR}? Keputusan akan disembunyikan daripada ibu bapa dan guru boleh mengubah markah semula.`);
+      if (!ok) return;
+      setSittingStatus(state, CURRENT_ACADEMIC_YEAR, exam.key, toPublish ? "terbit" : "draf");
+      persist();
+      renderSittingsCard();
+      showToast(toPublish ? `${exam.label} dikunci & diterbitkan.` : `${exam.label} dibuka semula (draf).`);
+    }));
+  }
+
+  // ================================================================
   // STATUS PELAJAR — aktif/tidak-aktif, never a raw delete for a
   // student with any history (see studentHasAnyRecords() in data.js).
   // Deactivating keeps every mark/attendance/hafazan/fee record
@@ -673,6 +718,7 @@
       persist();
       renderStudentTable();
       renderDashboardStats();
+      renderSittingsCard();
       closeModal();
       showToast("Keputusan peperiksaan dikemaskini.");
     });
@@ -2048,7 +2094,7 @@
     renderYuranPanel();
     renderGuruPanel();
     renderSettings();
-    if (typeof renderSittingsCard === "function") renderSittingsCard();
+    renderSittingsCard();
     if (!document.getElementById("subpanel-semakan").hidden) renderRegisterGrid();
     else renderSemakanBadge();
     if (!isAmbilDirty() && ambilClasses.length) loadAndRenderAmbil(ambilClassSelect.value, ambilDateInput.value);
@@ -2057,6 +2103,7 @@
 
   // ── Initial render ──────────────────────────────────────────────
   renderDashboardStats();
+  renderSittingsCard();
   renderStudentTable();
   renderYuranPanel();
   renderGuruPanel();

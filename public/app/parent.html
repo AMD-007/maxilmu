@@ -41,7 +41,7 @@
       <h2>Keputusan Peperiksaan</h2>
       <span class="panel-head__meta">Awal &middot; Pertengahan &middot; Akhir Tahun</span>
     </div>
-    <p class="card__hint">Keputusan bagi ketiga-tiga peperiksaan tahunan. Sesi yang belum berlangsung dipaparkan sebagai "—".</p>
+    <p class="card__hint">Keputusan bagi ketiga-tiga peperiksaan tahunan, dipaparkan selepas diterbitkan oleh madrasah. "—" bermaksud belum diterbitkan atau belum berlangsung.</p>
     <div class="table-wrap" id="results-table-wrap"></div>
   </section>
 
@@ -108,7 +108,9 @@
   const hafazanPct = Math.min(100, Math.round((hafazanTotal / hafazan.total) * 100));
 
   // ── Top stat tiles ────────────────────────────────────────────
-  const latestExam = EXAM_PERIODS.slice().reverse().find((exam) => examAverage(state, student, exam.key) !== null);
+  // Published sittings only, everywhere on this page — a draft sitting's
+  // marks (still being keyed in by gurus) must never reach a parent.
+  const latestExam = EXAM_PERIODS.slice().reverse().find((exam) => publishedExamAverage(state, student, exam.key) !== null);
   const latestAttendance = getLatestAttendanceEntry(student);
   document.getElementById("parent-stats").innerHTML = `
     <div class="stat-tile">
@@ -118,7 +120,7 @@
     </div>
     <div class="stat-tile">
       <span class="stat-tile__label">Purata Terkini</span>
-      <div class="stat-tile__value">${latestExam ? examAverage(state, student, latestExam.key) + "%" : "—"}</div>
+      <div class="stat-tile__value">${latestExam ? publishedExamAverage(state, student, latestExam.key) + "%" : "—"}</div>
       <p class="stat-tile__sub">${latestExam ? latestExam.label : "Belum ada keputusan"}</p>
     </div>
     <div class="stat-tile">
@@ -135,7 +137,12 @@
   // empty marks shape rather than crashing if a student somehow has
   // no current-year record yet.
   const currentExamRecord = getCurrentExamRecord(student);
-  const currentMarks = currentExamRecord ? currentExamRecord.marks : { awal: {}, pertengahan: {}, akhir: {} };
+  const currentMarks = { awal: {}, pertengahan: {}, akhir: {} };
+  if (currentExamRecord) {
+    EXAM_PERIODS.forEach((exam) => {
+      if (isSittingPublished(state, CURRENT_ACADEMIC_YEAR, exam.key)) currentMarks[exam.key] = currentExamRecord.marks[exam.key];
+    });
+  }
   const activeSubjects = state.settings.subjects.filter((subj) =>
     EXAM_PERIODS.some((exam) => Object.prototype.hasOwnProperty.call(currentMarks[exam.key], subj))
   );
@@ -154,7 +161,7 @@
       return `<tr><td data-label="Subjek">${escapeHtml(subj)}</td>${cells}</tr>`;
     }).join("");
     const avgCells = EXAM_PERIODS.map((exam) => {
-      const avg = examAverage(state, student, exam.key);
+      const avg = publishedExamAverage(state, student, exam.key);
       return `<td class="col-num" data-label="${exam.label}">${avg === null ? "—" : avg + "%"}</td>`;
     }).join("");
     resultsWrap.innerHTML = `
